@@ -1,0 +1,14 @@
+name = "rust_sorter"
+
+type = "algorithm"
+
+language = "rust"
+
+[build]
+command = "cargo"
+
+args = ["build", "--release"]
+
+[run]
+# The executable path relative to this file
+command = "target/release/algo-rust_sorter"

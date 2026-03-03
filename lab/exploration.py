@@ -46,6 +46,7 @@ class Explorer:
         # The size of the input array can be inferred as the product of its cardinality and multiplicity
         df_filtered['size'] = df_filtered['cardinality'] * df_filtered['multiplicity']
         df_filtered['swaps'] = df_filtered['swaps'].fillna(df_filtered['size']).astype('int64')
+        df_filtered['lang_fn_name'] = '[' + df_filtered['language'] + '] ' + df_filtered['function_name']
 
         return df_filtered
     
@@ -91,14 +92,14 @@ class Explorer:
             df,
             x=varying_param_name,
             y=duration_type,
-            color='function_name',
+            color='lang_fn_name',
             title=title,
             points="all", # Show all points next to box
             hover_data=['language', 'seed'],
             labels={
                 varying_param_name: varying_param_name.title(),
                 duration_type: f"{duration_title} (ns)",
-                "function_name": "Algorithm"
+                "lang_fn_name": "Algorithm"
             }
         )
         
@@ -135,7 +136,7 @@ class Explorer:
             df['nomalized_duration'] = df['duration'] / df[varying_param_name]
 
         # Aggregate data
-        df_summary = df.groupby([varying_param_name, 'function_name'])[duration_type].median().reset_index()
+        df_summary = df.groupby([varying_param_name, 'lang_fn_name'])[duration_type].median().reset_index()
         
         if show_table:
             print("Median Durations (ns):")
@@ -145,13 +146,13 @@ class Explorer:
             df_summary,
             x=varying_param_name,
             y=duration_type,
-            color='function_name',
+            color='lang_fn_name',
             markers=True,
             title=title,
             labels={
                 varying_param_name: varying_param_name.title(),
                 duration_type: f"{duration_title} (ns)",
-                "function_name": "Algorithm"
+                "lang_fn_name": "Algorithm"
             }
         )
 
@@ -200,7 +201,7 @@ class Explorer:
             data=df,
             x=varying_param_name or df.index,
             y=duration_type,
-            hue='function_name', # Color by function name (algorithm)
+            hue='lang_fn_name', # Color by function name (algorithm)
             fliersize=0 # Hide outliers in the boxplot as they will be in the stripplot
         )
 
@@ -209,7 +210,7 @@ class Explorer:
             x=varying_param_name or df.index,
             y=duration_type,
             palette='dark:black',
-            hue='function_name', # Color by function name (algorithm)
+            hue='lang_fn_name', # Color by function name (algorithm)
             dodge=True, # Dodge points to align with boxplots
             jitter=0.2,
             alpha=0.3,
@@ -232,7 +233,7 @@ class Explorer:
         handles, labels = plt.gca().get_legend_handles_labels()
         # Assuming 'language' is the first hue variable used in boxplot
         # Get unique function names for legend
-        function_names = df['function_name'].unique()
+        function_names = df['lang_fn_name'].unique()
         n_functions = len(function_names)
         plt.legend(handles[:n_functions], labels[:n_functions], title='Algorithm', fontsize=10)
         if ylog:
@@ -267,7 +268,7 @@ class Explorer:
         print(f"\n--- Trend Analysis: Median Duration vs. {str(varying_param_name).capitalize()} ---")
         # Group by the varied parameter and algorithm, calculate median duration
         df_summary = df.groupby(
-            [varying_param_name or df.index, 'function_name']
+            [varying_param_name or df.index, 'lang_fn_name']
         )[duration_type].median().reset_index() # TODO: somombo> consider returning this back to the user
 
         if show_table:
@@ -281,7 +282,7 @@ class Explorer:
             data=df_summary,
             x=varying_param_name or df.index,
             y=duration_type,
-            hue='function_name', # Color lines by algorithm
+            hue='lang_fn_name', # Color lines by algorithm
             # style='function_name', # Use different markers/lines
             marker='o',
             markers=True,

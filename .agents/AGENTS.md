@@ -24,4 +24,10 @@ Do not guess or hallucinate component I/O interfaces. When asked to create new c
 
 * **Performance:** Always enable maximum compiler optimizations in component build configurations (e.g., `-O3` for C++, `--release` for Rust).
 * **Fairness:** Sorting benchmarks must strictly isolate the sorting function by excluding memory allocation, parsing, and standard I/O overhead from the measured time.
+* **Clean Code Practices:** Prioritize self-documenting variable and function names over inline comments. Use standard docstrings for public interfaces only. Limit inline comments to non-obvious intent or complexity. Never explain basic syntax.
+* **Idiomatic Language Features:** Use idiomatic language patterns where applicable. Write code that is safe and feels native to the target language.
 * **Reference Material:** When writing Python analysis scripts or interfacing with the orchestrator, refer to `lab/benchmarking.py` and `lab/template_study.ipynb` for correct usage.
+
+
+- Limit inline comments to non-obvious intent or complexity e.g. it should never never explain syntax via comments. 
+- Prefer to make changes that are as easy as possible for human to review e.g by inspecting git diff.

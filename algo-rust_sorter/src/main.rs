@@ -1,12 +1,9 @@
 use std::env;
-use std::io::{self, BufRead, Write};
+use std::io::{self, BufRead, BufWriter, Write};
 use std::time::Instant;
 
-/// Defines the signature for sorting algorithms benchmarked by this tool.
 type SortRoutine = fn(&mut [u32]);
 
-/// Extracts a list of algorithm names from the command-line argument.
-/// Terminates the program if the format is invalid or missing.
 fn parse_algorithms(cli_arg: &str) -> Vec<String> {
     const PREFIX: &str = "--functions=";
     if !cli_arg.starts_with(PREFIX) {
@@ -20,13 +17,12 @@ fn parse_algorithms(cli_arg: &str) -> Vec<String> {
         std::process::exit(1);
     }
 
-    let mut algorithms = Vec::new();
-    for algo_name in csv_list.split(',') {
-        let trimmed = algo_name.trim();
-        if !trimmed.is_empty() {
-            algorithms.push(trimmed.to_string());
-        }
-    }
+    let algorithms: Vec<String> = csv_list
+        .split(',')
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(String::from)
+        .collect();
 
     if algorithms.is_empty() {
         eprintln!("Error: No valid functions extracted from argument.");
@@ -36,8 +32,6 @@ fn parse_algorithms(cli_arg: &str) -> Vec<String> {
     algorithms
 }
 
-/// Resolves a string algorithm name to its corresponding function pointer.
-/// Terminates the program if an unknown algorithm is requested.
 fn resolve_algorithm(name: &str) -> SortRoutine {
     match name {
         "slice::sort" => |arr| arr.sort(),
@@ -58,44 +52,45 @@ fn main() {
 
     let target_algorithms_names = parse_algorithms(&args[1]);
 
-    let mut target_algorithms: Vec<(&String, SortRoutine)> = Vec::new();
-    for name in &target_algorithms_names {
-        target_algorithms.push((name, resolve_algorithm(name)));
-    }
+    let target_algorithms: Vec<(&String, SortRoutine)> = target_algorithms_names
+        .iter()
+        .map(|name| (name, resolve_algorithm(name)))
+        .collect();
 
     let stdin = io::stdin();
-    let mut stdout = io::stdout();
-    let handle = stdin.lock();
+    let mut handle = stdin.lock();
+    
+    let stdout = io::stdout();
+    let mut writer = BufWriter::new(stdout.lock());
 
-    for line_result in handle.lines() {
-        let line = match line_result {
-            Ok(l) => l,
+    let mut line_buffer = String::new();
+    let mut original_array: Vec<u32> = Vec::new();
+
+    loop {
+        line_buffer.clear();
+        match handle.read_line(&mut line_buffer) {
+            Ok(0) => break,
+            Ok(_) => {}
             Err(e) => {
                 eprintln!("Error reading from standard input: {}", e);
                 std::process::exit(1);
             }
-        };
+        }
 
-        let trimmed_line = line.trim();
+        let trimmed_line = line_buffer.trim();
         if trimmed_line.is_empty() {
             continue;
         }
 
         let mut parts = trimmed_line.split(',');
 
-        let id_part = parts.next();
-        if id_part.is_none() {
-            eprintln!("Error: Malformed line. Missing ID.");
-            std::process::exit(1);
-        }
-
-        let id = id_part.unwrap().trim();
+        let id = parts.next().unwrap_or("").trim();
         if id.is_empty() {
-            eprintln!("Error: Malformed line. Empty ID.");
+            eprintln!("Error: Malformed line. Empty or missing ID.");
             std::process::exit(1);
         }
 
-        let mut original_array: Vec<u32> = Vec::new();
+        original_array.clear();
         for token in parts {
             let token = token.trim();
             if token.is_empty() {
@@ -128,8 +123,8 @@ fn main() {
             sort_routine(&mut array_copy);
             let duration = start.elapsed();
 
-            writeln!(stdout, "{},{},{}", id, algo_name, duration.as_nanos()).unwrap();
-            stdout.flush().unwrap();
+            writeln!(writer, "{},{},{}", id, algo_name, duration.as_nanos()).unwrap();
+            writer.flush().unwrap();
         }
     }
 }

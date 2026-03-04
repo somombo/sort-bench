@@ -1,0 +1,19 @@
+name = "c_sorter"
+type = "algorithm"
+language = "c"
+
+[build]
+command = "gcc"
+args = [
+  "-DNDEBUG",
+  "-std=gnu17",
+  "-O3",
+  "-Wall",
+  "-Wextra",
+  "sorter.c",
+  "-o",
+  "sorter_c_exe",
+]
+
+[run]
+command = "sorter_c_exe"

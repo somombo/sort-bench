@@ -44,6 +44,11 @@
       "command": "./algo-haskell_sorter",
       "working_dir": "components/exec-haskell_sorter"
     },
+    "java": {
+      "type": "executor",
+      "command": "./sorter_java",
+      "working_dir": "components/exec-java_sorter"
+    },
     "lean": {
       "type": "executor",
       "command": ".lake/build/bin/sorter_lean",

@@ -1,0 +1,10 @@
+[[components]]
+name = "java"
+type = "executor"
+
+[components.build]
+command = "bash"
+args = ["build.sh"]
+
+[components.run]
+command = "./sorter_java"

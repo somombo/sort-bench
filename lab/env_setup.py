@@ -81,17 +81,20 @@ def setup_csharp():
         os.environ['PATH'] = f"{os.environ['HOME']}/.dotnet:{os.environ['PATH']}"
         print("C# (.NET) installed.")
 
-def setup_java():
-    """Installs the Java toolchain (OpenJDK) if missing."""
+def setup_java(version="25"):
+    """Installs the Java toolchain (GraalVM) for AOT compilation if missing."""
     print("--- Checking Java Toolchain ---")
     try:
         _run_command(['java', '-version'], capture_output=True)
-        _run_command(['javac', '-version'], capture_output=True)
-        print("Java is already installed.")
+        _run_command(['native-image', '--version'], capture_output=True)
+        print("Java (GraalVM) is already installed.")
     except (subprocess.CalledProcessError, FileNotFoundError):
-        print("Java not found. Installing default-jdk...")
-        _run_command("sudo apt-get update && sudo apt-get install -y default-jdk", shell=True)
-        print("Java installed.")
+        print(f"GraalVM not found. Installing GraalVM JDK {version} for Linux x86-64...")
+        _run_command("sudo apt-get update && sudo apt-get install -y build-essential zlib1g-dev", shell=True)
+        _run_command(f"wget https://download.oracle.com/graalvm/{version}/latest/graalvm-jdk-{version}_linux-x64_bin.tar.gz && sudo mkdir -p /usr/local/graalvm && sudo tar -xzf graalvm-jdk-{version}_linux-x64_bin.tar.gz -C /usr/local/graalvm --strip-components=1 && rm graalvm-jdk-{version}_linux-x64_bin.tar.gz", shell=True)
+        os.environ['JAVA_HOME'] = "/usr/local/graalvm"
+        os.environ['PATH'] = f"{os.environ['JAVA_HOME']}/bin:{os.environ['PATH']}"
+        print(f"Java (GraalVM) version {version} installed.")
 
 def setup_zig(version="0.15.2"):
     """Installs the Zig toolchain if missing."""

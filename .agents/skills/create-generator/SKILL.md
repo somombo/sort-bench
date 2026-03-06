@@ -53,4 +53,4 @@ Example standard output for `runs=2`:
 
 1. The complete source code for the data generator program.
 2. Standard language-specific project files and environment configurations (e.g., `requirements.txt`, `pyproject.toml`, `go.mod`).
-3. An `impafile.toml` configuration file specifying the executable `run` command and defining the arguments passed by the framework.
+3. An `impafile.toml` configuration file specifying the executable `run` command and defining the arguments passed by the framework. You must adhere to the [impafile schema](assets/impafile_schema.json) for the required format.

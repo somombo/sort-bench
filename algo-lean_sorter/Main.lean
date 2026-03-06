@@ -5,6 +5,7 @@ import Quicksort.Partition.Dutch.Basic
 import Quicksort.Adapt
 import Batteries.Data.BinaryHeap
 
+import SortBench
 
 
 -- def IO.print' [ToString α] (s : α) : IO Unit := do
@@ -47,21 +48,56 @@ def timeSort (id funcName : String) (originalArray : Array UInt32) (out : IO.FS.
   | "Array.insertionSort" =>
     let copy := originalArray.extract
     time_and_print (Array.insertionSort <$> pure copy)
+  | "Vector.insertionSort" =>
+    let copy := originalArray.extract.toVector
+    time_and_print (Vector.insertionSort <$> pure copy)
+
   | "Batteries.Array.heapSort" =>
     let copy := originalArray.extract
     time_and_print ((Array.heapSort · (· < ·)) <$> pure copy)
 
 
+  | "Somombo.qs.hoare" =>
+    let copy := originalArray.extract
+    time_and_print ((qs · (part := Partition.hoare)) <$> pure copy)
   | "Somombo.qs.hoare.eager" =>
     let copy := originalArray.extract
     time_and_print ((qs · (part := Partition.hoare.eager)) <$> pure copy)
+  | "Somombo.qs.hoare.classic" =>
+    let copy := originalArray.extract
+    time_and_print ((qs · (part := Partition.hoare.classic sorry sorry)) <$> pure copy)
+  | "Somombo.qs.hoare_adapt34" =>
+    let copy := originalArray.extract
+    time_and_print ((qs_adapt · (part := Partition.hoare) (M := 34)) <$> pure copy)
+  | "Somombo.qs.hoare.classic_adapt34" =>
+    let copy := originalArray.extract
+    time_and_print ((qs_adapt · (part := Partition.hoare.classic sorry sorry) (M := 34)) <$> pure copy)
+
+
+
 
   | "Somombo.qs.dutch" =>
     let copy := originalArray.extract
     time_and_print ((qs · (part := Partition.dutch)) <$> pure copy)
+
+
+  | "Somombo.qs.bentleyMcIlroy" =>
+    let copy := originalArray.extract
+    time_and_print ((qs · (part := Partition.bentleyMcIlroy)) <$> pure copy)
   | "Somombo.qs.bentleyMcIlroy.classic" =>
     let copy := originalArray.extract
     time_and_print ((qs · (part := Partition.bentleyMcIlroy.classic sorry sorry)) <$> pure copy)
+  | "Somombo.qs.bentleyMcIlroy.eager" =>
+    let copy := originalArray.extract
+    time_and_print ((qs · (part := Partition.bentleyMcIlroy.eager)) <$> pure copy)
+  | "Somombo.qs.bentleyMcIlroy_adapt34" =>
+    let copy := originalArray.extract
+    time_and_print ((qs_adapt · (part := Partition.bentleyMcIlroy) (M := 34)) <$> pure copy)
+  | "Somombo.qs.bentleyMcIlroy.classic_adapt34" =>
+    let copy := originalArray.extract
+    time_and_print ((qs_adapt · (part := Partition.bentleyMcIlroy.classic sorry sorry) (M := 34)) <$> pure copy)
+
+
   | "Somombo.qs.lomuto" =>
     let copy := originalArray.extract
     time_and_print ((qs · (part := Partition.lomuto)) <$> pure copy)

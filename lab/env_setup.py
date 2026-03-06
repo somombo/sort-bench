@@ -194,6 +194,29 @@ def setup_haskell(ghc_version="latest", cabal_version="latest"):
 #     # install_python_deps()
 #     setup_lean()
 #     setup_rust()
+#     # clone_repository()
+#     print("\n--- Environment Setup Complete ---")
+    
+#     if os.path.exists(check_file):
+#         print(f"'{check_file}' found. Skipping clone.")
+#         return
+
+#     print(f"Cloning repository to {destination}...")
+#     if os.path.exists(destination):
+#         shutil.rmtree(destination)
+    
+#     _run_command(["git", "clone", REPO_URL, destination])
+    
+#     if os.path.exists(destination) and is_colab_env():
+#         print(f"Moving contents from {destination} to current directory...")
+#         _run_command(f"mv {destination}/* /content", shell=True)
+#         _run_command(f"mv {destination}/.[!.]* /content", shell=True, check=False)
+
+# def setup_all():
+#     """Runs the full environment setup pipeline."""
+#     # install_python_deps()
+#     setup_lean()
+#     setup_rust()
 #     setup_haskell()
 #     # clone_repository()
 #     print("\n--- Environment Setup Complete ---")

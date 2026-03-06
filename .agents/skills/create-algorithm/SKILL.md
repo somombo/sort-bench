@@ -69,5 +69,5 @@ Process the standard input stream one line at a time. For each line read, strict
 
 1. The complete source code for the sorter program.
 2. Standard language-specific project files (e.g., `go.mod`, `package.json`, `Cargo.toml`, or a component-level `.gitignore`) establishing the component as a self-contained subproject.
-3. An `impafile.toml` configuration file to integrate this component into the impalab framework.
+3. An `impafile.toml` configuration file to integrate this component into the impalab framework. You must adhere to the [impafile schema](assets/impafile_schema.json) for the required format.
 4. If the language requires specific build steps or environment variables to achieve a fully optimized release build, provide a `build.sh` script and reference it in the `impafile.toml`. Performance is critical so release optimizations must be enabled.

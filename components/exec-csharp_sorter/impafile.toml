@@ -1,0 +1,19 @@
+[[components]]
+name = "csharp"
+type = "executor"
+
+[components.build]
+command = "dotnet"
+args = [
+  "publish",
+  "-c",
+  "Release",
+  "-r",
+  "linux-x64",
+  "--self-contained",
+  "true",
+  "-p:PublishAot=true",
+]
+
+[components.run]
+command = "bin/Release/net9.0/linux-x64/publish/AlgoCSharpSorter"

@@ -1,0 +1,11 @@
+[[components]]
+name = "haskell"
+type = "executor"
+
+[components.build]
+command = "ghc"
+args = ["-O2", "-funbox-strict-fields", "Main.hs", "-o", "algo-haskell_sorter"]
+
+[components.run]
+command = "./algo-haskell_sorter"
+

@@ -148,7 +148,8 @@ def setup_haskell(ghc_version="latest", cabal_version="latest"):
         _run_command(['cabal', '--version'], capture_output=True)
         print("Haskell (GHC and Cabal) is already installed.")
     except (subprocess.CalledProcessError, FileNotFoundError):
-        print("Haskell toolchain not found. Installing via GHCup...")
+        print("Haskell toolchain not found. Installing system prerequisites and via GHCup...")
+        _run_command("sudo apt-get update && sudo apt-get install -y libgmp-dev", shell=True)
         # Non-interactive installation of GHCup, GHC, and Cabal
         ghcup_cmd = (
             "curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | "

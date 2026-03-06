@@ -19,6 +19,11 @@
       "command": "./sorter_cpp_exe",
       "working_dir": "components/exec-cpp_sorter"
     },
+    "csharp": {
+      "type": "executor",
+      "command": "bin/Release/net9.0/linux-x64/publish/AlgoCSharpSorter",
+      "working_dir": "components/exec-csharp_sorter"
+    },
     "deno": {
       "type": "executor",
       "command": "deno",

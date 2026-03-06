@@ -1,0 +1,6 @@
+[project]
+name = "algo-python_sorter"
+version = "0.1.0"
+description = "Python sorting algorithm component for sort-bench"
+requires-python = ">=3.13"
+dependencies = []

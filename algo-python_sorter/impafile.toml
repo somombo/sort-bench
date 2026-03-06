@@ -1,0 +1,7 @@
+name = "python_sorter"
+type = "algorithm"
+language = "python"
+
+[run]
+command = "uv"
+args = ["run", "main.py"]

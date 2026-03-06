@@ -8,12 +8,14 @@ defaultTargets = ["sorter_lean"]
 name = "sorter_lean"
 root = "Main"
 buildType = "release"
-# cflags = ["-O3", "-march=native"]
-# lflags = ["-static"]
+cflags = ["-O3", "-march=native"]
+lflags = ["-static"]
 # release = true 
 # srcDir = "src/Lean"
 
 
+[[lean_lib]]
+name = "SortBench"
 
 [[require]]
 name = "quicksort"

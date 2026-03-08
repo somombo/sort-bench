@@ -1,0 +1,7 @@
+name = "bun_sorter"
+type = "algorithm"
+language = "bun"
+
+[run]
+command = "bun"
+args = ["run", "../algo-javascript_nodejs_sorter/main.js"]

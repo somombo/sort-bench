@@ -1,0 +1,7 @@
+name = "nodejs_sorter"
+type = "algorithm"
+language = "nodejs"
+
+[run]
+command = "node"
+args = ["main.js"]

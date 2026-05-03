@@ -1,7 +1,7 @@
-name = "python_sorter"
-type = "algorithm"
-language = "python"
+[[components]]
+type = "executor"
+name = "python"
 
-[run]
+[components.run]
 command = "uv"
 args = ["run", "main.py"]

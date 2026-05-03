@@ -1,0 +1,24 @@
+{
+  "components": {
+    "cpp": {
+      "type": "executor",
+      "command": "./sorter_cpp_exe",
+      "working_dir": "algo-cpp_sorter"
+    },
+    "somombo_unifshuffle_multi": {
+      "type": "generator",
+      "command": ".lake/build/bin/data_generator_multi",
+      "working_dir": "gen_somombo_unifshuffle"
+    },
+    "somombo_unifshuffle": {
+      "type": "generator",
+      "command": ".lake/build/bin/data_generator",
+      "working_dir": "gen_somombo_unifshuffle"
+    },
+    "lean": {
+      "type": "executor",
+      "command": ".lake/build/bin/sorter_lean",
+      "working_dir": "algo-lean_sorter"
+    }
+  }
+}

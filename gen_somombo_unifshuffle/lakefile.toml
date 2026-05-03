@@ -3,13 +3,15 @@ version = "0.1.0"
 defaultTargets = ["bench"]
 
 
-
 [[lean_lib]]
 name = "ShuffleSample"
 
 [[lean_lib]]
 name = "RandomArray"
 
+[[lean_exe]]
+name = "data_generator_multi"
+root = "Main_Multi"
 
 [[lean_exe]]
 name = "data_generator"
@@ -19,8 +21,7 @@ root = "Main"
 buildType = "release"
 
 
-
 [[require]]
 name = "Cli"
 git = "https://github.com/leanprover/lean4-cli"
-rev = "v4.22.0+patch1"
+rev = "v4.30.0"

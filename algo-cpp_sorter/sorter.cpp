@@ -58,51 +58,14 @@ uint32_t parseStrictUint32(const std::string& token) {
     }
 }
 
-/**
- * @brief Extracts a list of algorithm names from the command-line argument.
- * Terminates the program if the format is invalid or missing.
- * @param cliArg The command-line argument string.
- * @return A vector of parsed algorithm names.
- */
-std::vector<std::string> parseAlgorithms(const std::string& cliArg) {
-    const std::string prefix = "--functions=";
-
-    if (cliArg.rfind(prefix, 0) != 0) {
-        std::cerr << "Error: Invalid argument format. Expected " << prefix << "...\n";
-        std::exit(1);
-    }
-
-    std::string csvList = cliArg.substr(prefix.length());
-    if (csvList.empty()) {
-        std::cerr << "Error: No functions provided in argument.\n";
-        std::exit(1);
-    }
-
-    std::vector<std::string> algorithms;
-    std::stringstream ss(csvList);
-    std::string algoName;
-    while (std::getline(ss, algoName, ',')) {
-        algoName = trim(algoName);
-        if (!algoName.empty()) {
-            algorithms.push_back(algoName);
-        }
-    }
-
-    if (algorithms.empty()) {
-        std::cerr << "Error: No valid functions extracted from argument.\n";
-        std::exit(1);
-    }
-
-    return algorithms;
-}
 
 /**
  * @brief Parses a single line of CSV, executes requested sorts, and outputs timing data.
  * @param line The raw input string containing the ID and comma-separated array values.
- * @param targetAlgorithms The list of algorithm names to execute.
+ * @param algoName The list of algorithm names to execute.
  * @param algorithmRegistry The mapping of algorithm names to callable functions.
  */
-void benchmarkArray(const std::string& line, const std::vector<std::string>& targetAlgorithms, const std::map<std::string, SortRoutine>& algorithmRegistry) {
+void benchmarkArray(const std::string& line, const std::string& algoName, const std::map<std::string, SortRoutine>& algorithmRegistry) {
     std::stringstream ss(line);
     std::string idToken;
     
@@ -130,24 +93,21 @@ void benchmarkArray(const std::string& line, const std::vector<std::string>& tar
         return;
     }
 
-    for (const std::string& algoName : targetAlgorithms) {
         auto it = algorithmRegistry.find(algoName);
         if (it == algorithmRegistry.end()) {
             std::cerr << "Error: Unknown function '" << algoName << "' requested.\n";
             std::exit(1);
         }
 
-        std::vector<uint32_t> arrayCopy = originalArray;
         const SortRoutine& sortRoutine = it->second;
 
         auto start = std::chrono::steady_clock::now();
-        sortRoutine(arrayCopy);
+        sortRoutine(originalArray);
         auto end = std::chrono::steady_clock::now();
 
         auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
 
-        std::cout << id << "," << algoName << "," << duration << "\n" << std::flush;
-    }
+        std::cout << id << "," << duration << "\n" << std::flush;
 }
 
 int main(int argc, char* argv[]) {
@@ -159,7 +119,11 @@ int main(int argc, char* argv[]) {
         std::exit(1);
     }
 
-    std::vector<std::string> targetAlgorithms = parseAlgorithms(argv[1]);
+    const std::string&  algoName = argv[1];
+    if (algoName.empty()) {
+        std::cerr << "Error: No executor target provided in argument.\n";
+        std::exit(1);
+    }
 
     std::map<std::string, SortRoutine> algorithmRegistry = {
         {"std::sort", [](std::vector<uint32_t>& v) { 
@@ -176,7 +140,7 @@ int main(int argc, char* argv[]) {
         if (line.empty()) {
             continue;
         }
-        benchmarkArray(line, targetAlgorithms, algorithmRegistry);
+        benchmarkArray(line, algoName, algorithmRegistry);
     }
 
     return 0;

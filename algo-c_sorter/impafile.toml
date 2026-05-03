@@ -1,8 +1,8 @@
-name = "c_sorter"
-type = "algorithm"
-language = "c"
+[[components]]
+name = "c"
+type = "executor"
 
-[build]
+[components.build]
 command = "gcc"
 args = [
   "-DNDEBUG",
@@ -15,5 +15,5 @@ args = [
   "sorter_c_exe",
 ]
 
-[run]
+[components.run]
 command = "sorter_c_exe"

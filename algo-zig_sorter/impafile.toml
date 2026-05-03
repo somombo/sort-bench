@@ -1,10 +1,10 @@
-name = "zig_sorter"
-type = "algorithm"
-language = "zig"
+[[components]]
+type = "executor"
+name = "zig"
 
-[build]
+[components.build]
 command = "zig"
 args = ["build", "-Doptimize=ReleaseFast"]
 
-[run]
+[components.run]
 command = "zig-out/bin/sorter_zig_exe"

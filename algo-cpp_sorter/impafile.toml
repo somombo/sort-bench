@@ -1,10 +1,8 @@
-name = "cpp_sorter"
+[[components]]
+name = "cpp"
+type = "executor"
 
-type = "algorithm"
-
-language = "cpp"
-
-[build]
+[components.build]
 command = "c++"
 
 # Arguments for the build.
@@ -16,9 +14,9 @@ args = [
     "-Wextra",
     "sorter.cpp",
     "-o",
-    "sorter_cpp_exe"
+    "sorter_cpp_exe",
 ]
 
-[run]
+[components.run]
 # The executable path relative to this file
-command = "sorter_cpp_exe"
+command = "./sorter_cpp_exe"

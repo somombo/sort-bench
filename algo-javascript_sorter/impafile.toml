@@ -1,0 +1,25 @@
+
+[[components]]
+type = "executor"
+name = "nodejs"
+
+[components.run]
+command = "node"
+args = ["main.js"]
+
+[[components]]
+name = "bun"
+type = "executor"
+
+[components.run]
+command = "bun"
+args = ["run", "./main.js"]
+
+
+[[components]]
+type = "executor"
+name = "deno"
+
+[components.run]
+command = "deno"
+args = ["run", "--allow-sys", "./main.js"]

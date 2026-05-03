@@ -5,22 +5,78 @@ import json
 import time
 import pandas as pd
 from typing import List, Dict, Any, Optional
-def generate_seed() -> int:
-    try:
-        final_seed = int.from_bytes(os.urandom(8), 'big')
-    except NotImplementedError:
-        U64_MODULUS = 2**64
-        final_seed = int(time.time() * 1_000_000) % U64_MODULUS
-    return final_seed
+import random
+import secrets
+
+# def generate_seeds(num: int, s : int | float | str | bytes | bytearray | None = None) -> int:
+#     if s is not None:
+#         random.seed(s)
+#         return [random.getrandbits(64) for _ in range(num)] 
+#     return [secrets.randbits(64) for _ in range(num)]
 
 
+def u64(s: str) -> int:
+    MAX_U64 = 0xFFFFFFFFFFFFFFFF
+    val = int(s.strip(), 10)
+    if not (0 <= val <= MAX_U64):
+        raise ValueError(f"Value {val} is out of bounds for a u64.")
+    return val
+
+
+
+
+# from collections import defaultdict
+
+# class KeyTracker:
+#     def __init__(self):
+#         # defaultdict(int) automatically starts missing keys at 0
+#         self.counts = defaultdict(int)
+
+#     def check(self, key):
+#         """Increments the counter for the given key and returns the latest count."""
+#         self.counts[key] += 1
+#         return self.counts[key]
+    
 IMPA_EXE_NAME = "impa"
 
+
+def parse_task(task: Dict[str, Any] | str) ->  Dict[str, Any]:
+    if not isinstance(task, str):
+        return task
+
+    task_arr = task.split()
+    if len(task_arr) == 0:
+        raise SyntaxError(f"ERROR: Failed to parse task string: {task}")
+    
+    return {'executor': task_arr[0], 'args': task_arr[1:]}
+
+
 class Impa:
+    def _add_gen_kwargs(self, cmd: list[str], kwargs: dict[str, any]):
+        # Handle specific flags
+        if 'generator' in kwargs:
+            cmd.append(f"--generator={kwargs['generator']}")
+        if 'seed' in kwargs:
+            cmd.append(f"--seed={kwargs['seed']}")
+
+        # Handle passthrough flags
+        for key, value in kwargs.items():
+            if key in ['generator', 'seed']: continue
+            
+            flag_key = key.replace('_', '-')
+            if isinstance(value, bool):
+                if value: cmd.append(f"--{flag_key}")
+            elif value is not None:
+                cmd.append(f"--{flag_key}={value}")
+
     def __init__(
-        self, 
-        work_dir: str = ".",
-        impa_version_tag: str = "test_release"
+        self,
+        generator: str,
+        root_dir: str = ".",
+        manifest_filename: str = "impa_manifest.json",
+        impa_version_tag: str = "test_release",
+        component_overrides: Optional[Dict[str, Any]] = None,
+        local_bin_dir: str|None = None,
     ):
         """
         Abstracts the Impalab CLI functionality.
@@ -35,11 +91,15 @@ class Impa:
             impa_version_tag: The release tag to download if 'impa' is not found. 
                               Defaults to "test_release".
         """
-        self.work_dir = os.path.abspath(work_dir)
-        self.manifest_path = os.path.join(self.work_dir, "impa_manifest.json")
-        self.components_dir = self.work_dir
-        self.local_bin_dir = os.path.join(self.work_dir, ".bin")
+        self.root_dir = os.path.abspath(root_dir)
+        self.manifest_filename = manifest_filename
+        self.manifest_path = os.path.join(self.root_dir, manifest_filename)
+        self.components_dir = self.root_dir
+        self.local_bin_dir = os.path.abspath(local_bin_dir) if local_bin_dir and os.path.exists(local_bin_dir) else os.path.join(self.root_dir, ".bin")
         self.local_executable_path = os.path.join(self.local_bin_dir, IMPA_EXE_NAME)
+
+        self.component_overrides = component_overrides
+        self.generator = generator or "none"
 
         self.impa_version_tag = impa_version_tag
         self.impa_binary_url = f"https://github.com/somombo/impalab/releases/download/{self.impa_version_tag}/impa"
@@ -55,7 +115,7 @@ class Impa:
             result = subprocess.run(
                 command,
                 check=check,
-                cwd=self.work_dir,
+                cwd=self.root_dir,
                 capture_output=capture_output,
                 text=True
             )
@@ -113,23 +173,24 @@ class Impa:
         
         (System PATH check removed to enforce isolation)
         """
-        # Return cached path if already resolved
         if self._resolved_executable_path and os.path.exists(self._resolved_executable_path):
             return self._resolved_executable_path
 
-        # 1. Check local bin dir first
         if os.path.exists(self.local_executable_path):
              self._resolved_executable_path = self.local_executable_path
              return self._resolved_executable_path
 
-        # 2. Fallback to local setup/download
         self._resolved_executable_path = self._setup_impalab()
         return self._resolved_executable_path
 
-    def build(self) -> bool:
+    def build(self, include: Optional[List[str]] = None, exclude: Optional[List[str]] = None) -> bool:
         """
         Wraps 'impa build'. Uses class-level components_dir and manifest_path.
         
+        Args:
+            includes: List of component names to include.
+            excludes: List of component names to exclude.
+            
         Returns:
             bool: True if build succeeded.
         """
@@ -139,8 +200,18 @@ class Impa:
         cmd = [
             orchestrator, "build",
             "--components-dir", self.components_dir,
-            "--manifest-path", self.manifest_path
+            "--root-dir", self.root_dir,
+            "--manifest-filename", self.manifest_filename,
         ]
+
+        if self.component_overrides:
+            cmd.append(f"--component-overrides={self.component_overrides}") 
+
+        if include:
+            cmd.append(f"--include={",".join(include)}")
+
+        if exclude:
+            cmd.append(f"--exclude={",".join(exclude)}")
 
         try:
             self._run_command(cmd)
@@ -152,52 +223,36 @@ class Impa:
 
     def run_once(
         self,
-        algorithms: Dict[str, List[str]],
-        generator_exe_path: Optional[str] = None,
-        sorter_exe_paths: Optional[Dict[str, str]] = None,
-        build: bool = False,
+        tasks: List[Dict[str, Any]],
+        # gen_args,
         **kwargs
     ) -> List[Dict[str, Any]]:
         """
         Wraps 'impa run'. Uses class-level manifest_path.
         
         Args:
-            algorithms: Dictionary mapping languages to lists of functions.
-            generator_exe_path: Override path for generator.
-            sorter_exe_paths: Override paths for algorithms.
-            build: If True, runs self.build() before running the benchmark.
+            tasks: List of tasks to run.
             **kwargs: Additional arguments passed to the generator (e.g. seed, size).
         """
-        if build:
-            if not self.build():
-                return []
 
         orchestrator = self._ensure_installed()
 
         cmd = [orchestrator, "run"]
-        cmd.append(f"--algorithms={json.dumps(algorithms)}")
-        cmd.append(f"--manifest-path={self.manifest_path}")
+        cmd.append(f"--tasks={json.dumps(tasks)}")
+        cmd.append(f"--root-dir={self.root_dir}")
+        cmd.append(f"--manifest-filename={self.manifest_filename}")
+    
+        if self.component_overrides:
+            cmd.append(f"--component-overrides={self.component_overrides}") 
 
-        if generator_exe_path:
-            cmd.append(f"--generator-exe-path={generator_exe_path}")
-        if sorter_exe_paths:
-            cmd.append(f"--sorter-exe-paths={json.dumps(sorter_exe_paths)}")
+        cmd.append(f"--generator={self.generator}")
+        self._add_gen_kwargs(cmd, kwargs)
+        # for arg in gen_args:
+        #     self._add_gen_kwargs(cmd, arg)
+        #     cmd.append("--")
 
-        # Handle specific flags
-        if 'generator' in kwargs:
-            cmd.append(f"--generator={kwargs['generator']}")
-        if 'seed' in kwargs:
-            cmd.append(f"--seed={kwargs['seed']}")
-
-        # Handle passthrough flags
-        for key, value in kwargs.items():
-            if key in ['generator', 'seed']: continue
-            
-            flag_key = key.replace('_', '-')
-            if isinstance(value, bool):
-                if value: cmd.append(f"--{flag_key}")
-            elif value is not None:
-                cmd.append(f"--{flag_key}={value}")
+        # if cmd[-1] == "--":
+        #     cmd.pop()
 
         try:
             result = self._run_command(cmd, capture_output=True)
@@ -223,51 +278,98 @@ class Impa:
 
     def run(
         self,
-        algorithms: Dict[str, List[str]],
+        tasks: List[Dict[str, Any]|str],
         runs: int = 1,
         reps: int = 1,
-        generator: str = "none",
+        seed: int | None = None,
+        micro_reps = 1,
+        micro_runs = 1,
+        # generator: str = "none",
         params_list: List[Dict[str, Any]] = [],
     ) -> List[Dict[str, Any]]:
         """
         High-level experiment loop. 
         """
         try:
-            from tqdm.notebook import tqdm
+            from tqdm.notebook import tqdm, trange
         except ImportError:
             try:
-                from tqdm import tqdm
+                from tqdm import tqdm, trange
             except ImportError:
-                def tqdm(x): return x
+                def tqdm(x, desc="", leave=True): return x
+                def trange(x, desc="", leave=True): return x
+
+        params_list = [{
+            **p, 
+            'runs': micro_runs if 'runs' not in p else p['runs'], 
+            'reps': micro_reps if 'reps' not in p else p['reps'],
+        } for p in params_list]
+
+        tasks = list(map(parse_task, tasks))
+
+
+        if seed is None:
+            seed = u64(os.environ['IMPALAB_SEED']) if 'IMPALAB_SEED' in os.environ else secrets.randbits(64)
+        
+        print(f"Resolved seed: {seed}")
+        random.seed(seed)
+        run_seeds =  [random.getrandbits(64) for _ in range(runs)] 
 
         all_results = []
-        print(f"--- Running benchmarks ---")
         
         # Pre-calculate seeds for reproducibility across reps
-        for p in params_list:
-            p['generator'] = generator or "none"
-            p['seed'] = f"{p['seed'] if 'seed' in p else generate_seed()}"
+        # for p in params_list:
+        #     # p['generator'] = generator or "none"
+        #     p['seed'] = f"{p['seed'] if 'seed' in p else generate_seed()}"
+
+        # repd_algorithms = {}
+        # fn_lens = {}
+        # for lang, fns in algorithms.items():
+        #     repd_algorithms[lang] = fns * micro_reps
+        #     fn_lens[lang] = len(fns)
+
+        # tracker = KeyTracker()
+        # for i in range(reps):
+            # for current_params in params_list:
+        for rep_id in trange(reps, desc="Rep"):
+            for run_id, run_seed in enumerate(tqdm(run_seeds, desc=f"Run", leave=False)):
+                for current_params in tqdm(params_list, desc=f"Gen Param", leave=False,):
+                    # print(f"  algorithms={algorithms},")
+                    # print(f"  **{run_params}")
+
+                    current_params['seed'] = run_seed
+                    results = self.run_once(
+                        tasks=tasks,
+                        # seed=run_seed,
+                        **current_params
+                    )
 
 
-        workload = params_list * reps
-        
-        for i, current_params in enumerate(tqdm(workload)):
-            run_params = {'runs': runs, **current_params}
+                    # assert len(results) % runs == 0
+                    # assert len(results) % micro_reps == 0
 
-            # Delegate execution to the Impa class instance
-            results = self.run_once(
-                algorithms=algorithms,
-                build=False, # We built once at the start
-                **run_params
-            )
+                    for res in results: # SUM [fn_lens[lang] * runs * micro_reps]
+                        # id = res['id']
+                        # fn_name = res['function_name']
+                        # lang = res['language']
+                        
+                        # rep_id = f'{i + 1}'
+                        # micro_rep_id = tracker.check((
+                        #     rep_id,
+                        #     res['data_id'], 
+                        #     res['executor'], 
+                        #     " ".join(res['args']),
+                        # ))
 
-            # Merge input params into result rows for analysis
-            rep_id = str((i // len(params_list)) + 1)
-            for res in results:
-                res.update({
-                    'rep_id': rep_id,
-                    **current_params,
-                })
-            all_results.extend(results)
+                        res.update({
+                            'macro_rep_id': f'{rep_id}',
+                            'macro_run_id': f'{run_id}',
+                            # 'macro_run_seed': f'{run_seed}',
+ 
+                            # 'micro_rep_id': f'{micro_rep_id}',
+                            # 'gen_kwargs': current_params,
+                            **current_params,
+                        })
+                    all_results.extend(results)
 
         return all_results

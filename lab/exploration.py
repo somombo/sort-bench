@@ -19,13 +19,19 @@ from typing import Any, Dict, List
 def parse_results(results: List[Dict[str, Any]]) -> pd.DataFrame:
     df_results = pd.DataFrame(results)
     df_results['swaps'] = df_results['swaps'].astype('Int64')
-    df_results[['run_id', 'data_hash']] = df_results['id'].str.split('_', expand=True)
+    df_results[['micro_rep_id', 'micro_run_id', 'data_hash']] = df_results['data_id'].str.split('_', expand=True)
+    df_results['task_str'] = \
+        df_results['executor'].astype(str) + ' ' + df_results['args'].str.join(" ")
+
     columns=[
-        'rep_id', 
-        'run_id', 
+        'macro_rep_id', 
+        'macro_run_id', 
+        'micro_rep_id', 
+        'micro_run_id', 
         'data_hash', 
-        'language', 
-        'function_name', 
+        'executor', 
+        'args', 
+        'task_str', 
         'cardinality', 
         'multiplicity', 
         'swaps', 
@@ -40,13 +46,13 @@ class Explorer:
         if df.empty: return df
 
         # Filter for minimum duration per group to remove system jitter
-        df_filtered = df.loc[df.groupby(['run_id', 'data_hash', 'language', 'function_name'])['duration'].idxmin()] #.reset_index()
+        df_filtered = df.loc[df.groupby(['macro_run_id', 'micro_run_id', 'data_hash', 'task_str'])['duration'].idxmin()] #.reset_index()
 
         # A maximal swap (equal to the size of the input array) param is denoted by None
         # The size of the input array can be inferred as the product of its cardinality and multiplicity
         df_filtered['size'] = df_filtered['cardinality'] * df_filtered['multiplicity']
         df_filtered['swaps'] = df_filtered['swaps'].fillna(df_filtered['size']).astype('int64')
-        df_filtered['lang_fn_name'] = '[' + df_filtered['language'] + '] ' + df_filtered['function_name']
+        df_filtered['lang_fn_name'] = '[' + df_filtered['experiment_name'].astype(str) + '] ' + df_filtered['task_str'].astype(str)
 
         return df_filtered
     

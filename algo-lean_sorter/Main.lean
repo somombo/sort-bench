@@ -16,17 +16,28 @@ import SortBench
 -- def IO.println' [ToString α] (s : α) : IO Unit :=
 --   print' ((toString s).push '\n')
 
-def parseFunctions (arg : String) : Except String (List String) := do
-  let prefix' := "--functions="
-  if ¬(arg.startsWith prefix') then
-    throw "Invalid argument: Expected --functions=..."
+-- def parseFunctions (arg : String) : Except String (List String) := do
+--   let prefix' := "--functions="
+--   if ¬(arg.startsWith prefix') then
+--     throw "Invalid argument: Expected --functions=..."
 
-  let csv := arg.drop prefix'.length
-  if csv.isEmpty then
+--   let csv := arg.drop prefix'.length
+--   if csv.isEmpty then
+--     throw "Invalid argument: No functions provided."
+
+--   let funcs := csv.splitOn "," |>.filter (¬ ·.isEmpty)
+--   return funcs
+
+def parseTarget (arg : String) : Except String String := do
+  -- let prefix' := "--functions="
+  -- if ¬(arg.startsWith prefix') then
+  --   throw "Invalid argument: Expected --functions=..."
+
+  -- let arg := arg.drop prefix'.length
+  if arg.isEmpty then
     throw "Invalid argument: No functions provided."
 
-  let funcs := csv.splitOn "," |>.filter (¬ ·.isEmpty)
-  return funcs
+  return arg
 
 def timeAx (ax : IO α) : IO (Nat × α)  := do
   let start ← IO.monoNanosNow
@@ -39,68 +50,68 @@ def timeAx (ax : IO α) : IO (Nat × α)  := do
 def timeSort (id funcName : String) (originalArray : Array UInt32) (out : IO.FS.Stream) : IO Unit := do
   match funcName with
   | "Array.qsort" =>
-    let copy := originalArray.extract
-    time_and_print (Array.qsort <$> pure copy)
+    -- let copy := copy.extract
+    time_and_print (Array.qsort <$> pure originalArray)
   | "List.mergeSort" =>
 
     let copy := originalArray.toList
     time_and_print (List.mergeSort <$> pure copy)
   | "Array.insertionSort" =>
-    let copy := originalArray.extract
-    time_and_print (Array.insertionSort <$> pure copy)
+    -- let copy := copy.extract
+    time_and_print (Array.insertionSort <$> pure originalArray)
   | "Vector.insertionSort" =>
-    let copy := originalArray.extract.toVector
+    let copy := originalArray.toVector
     time_and_print (Vector.insertionSort <$> pure copy)
 
   | "Batteries.Array.heapSort" =>
-    let copy := originalArray.extract
-    time_and_print ((Array.heapSort · (· < ·)) <$> pure copy)
+    -- let copy := copy.extract
+    time_and_print ((Array.heapSort · (· < ·)) <$> pure originalArray)
 
 
   | "Somombo.qs.hoare" =>
-    let copy := originalArray.extract
-    time_and_print ((qs · (part := Partition.hoare)) <$> pure copy)
+    -- let copy := copy.extract
+    time_and_print ((qs · (part := Partition.hoare)) <$> pure originalArray)
   | "Somombo.qs.hoare.eager" =>
-    let copy := originalArray.extract
-    time_and_print ((qs · (part := Partition.hoare.eager)) <$> pure copy)
+    -- let copy := copy.extract
+    time_and_print ((qs · (part := Partition.hoare.eager)) <$> pure originalArray)
   | "Somombo.qs.hoare.classic" =>
-    let copy := originalArray.extract
-    time_and_print ((qs · (part := Partition.hoare.classic sorry sorry)) <$> pure copy)
+    -- let copy := copy.extract
+    time_and_print ((qs · (part := Partition.hoare.classic sorry sorry)) <$> pure originalArray)
   | "Somombo.qs.hoare_adapt34" =>
-    let copy := originalArray.extract
-    time_and_print ((qs_adapt · (part := Partition.hoare) (M := 34)) <$> pure copy)
+    -- let copy := copy.extract
+    time_and_print ((qs_adapt · (part := Partition.hoare) (M := 34)) <$> pure originalArray)
   | "Somombo.qs.hoare.classic_adapt34" =>
-    let copy := originalArray.extract
-    time_and_print ((qs_adapt · (part := Partition.hoare.classic sorry sorry) (M := 34)) <$> pure copy)
+    -- let copy := copy.extract
+    time_and_print ((qs_adapt · (part := Partition.hoare.classic sorry sorry) (M := 34)) <$> pure originalArray)
 
 
 
 
   | "Somombo.qs.dutch" =>
-    let copy := originalArray.extract
-    time_and_print ((qs · (part := Partition.dutch)) <$> pure copy)
+    -- let copy := copy.extract
+    time_and_print ((qs · (part := Partition.dutch)) <$> pure originalArray)
 
 
   | "Somombo.qs.bentleyMcIlroy" =>
-    let copy := originalArray.extract
-    time_and_print ((qs · (part := Partition.bentleyMcIlroy)) <$> pure copy)
+    -- let copy := copy.extract
+    time_and_print ((qs · (part := Partition.bentleyMcIlroy)) <$> pure originalArray)
   | "Somombo.qs.bentleyMcIlroy.classic" =>
-    let copy := originalArray.extract
-    time_and_print ((qs · (part := Partition.bentleyMcIlroy.classic sorry sorry)) <$> pure copy)
+    -- let copy := copy.extract
+    time_and_print ((qs · (part := Partition.bentleyMcIlroy.classic sorry sorry)) <$> pure originalArray)
   | "Somombo.qs.bentleyMcIlroy.eager" =>
-    let copy := originalArray.extract
-    time_and_print ((qs · (part := Partition.bentleyMcIlroy.eager)) <$> pure copy)
+    -- let copy := copy.extract
+    time_and_print ((qs · (part := Partition.bentleyMcIlroy.eager)) <$> pure originalArray)
   | "Somombo.qs.bentleyMcIlroy_adapt34" =>
-    let copy := originalArray.extract
-    time_and_print ((qs_adapt · (part := Partition.bentleyMcIlroy) (M := 34)) <$> pure copy)
+    -- let copy := copy.extract
+    time_and_print ((qs_adapt · (part := Partition.bentleyMcIlroy) (M := 34)) <$> pure originalArray)
   | "Somombo.qs.bentleyMcIlroy.classic_adapt34" =>
-    let copy := originalArray.extract
-    time_and_print ((qs_adapt · (part := Partition.bentleyMcIlroy.classic sorry sorry) (M := 34)) <$> pure copy)
+    -- let copy := copy.extract
+    time_and_print ((qs_adapt · (part := Partition.bentleyMcIlroy.classic sorry sorry) (M := 34)) <$> pure originalArray)
 
 
   | "Somombo.qs.lomuto" =>
-    let copy := originalArray.extract
-    time_and_print ((qs · (part := Partition.lomuto)) <$> pure copy)
+    -- let copy := copy.extract
+    time_and_print ((qs · (part := Partition.lomuto)) <$> pure originalArray)
 
 
 
@@ -110,7 +121,7 @@ def timeSort (id funcName : String) (originalArray : Array UInt32) (out : IO.FS.
 where
   time_and_print {α : Type} (ax : IO α) : IO Unit := do
     let ⟨dur_nanoseconds, _⟩ ← timeAx ax
-    out.putStrLn s!"{id},{funcName},{dur_nanoseconds}"
+    out.putStrLn s!"{id},{dur_nanoseconds}"
 
 
 
@@ -140,16 +151,15 @@ def parseLine (line : String) : IO (String × Array UInt32) := do
 #guard_msgs(error) in
 #eval parseLine "a,g,4 "
 
-def processLines (requestedFuncs : List String) : IO UInt32 := do
+def processLines (target : String) : IO UInt32 := do
   let hIn ← IO.getStdin
   let hOut ← IO.getStdout
 
   let rec proc (line : String) := do
     let (id, originalArray) ← parseLine line
     if !originalArray.isEmpty then
-      for funcName in requestedFuncs do
-        timeSort id funcName originalArray hOut
-        hOut.flush
+      timeSort id target originalArray hOut
+      hOut.flush
 
   let mut isEOF := false
   repeat do
@@ -182,9 +192,9 @@ def processLines (requestedFuncs : List String) : IO UInt32 := do
 def main (args : List String) : IO UInt32 := do
   match args with
   | [arg] =>
-    match parseFunctions arg with
-    | .ok requestedFuncs =>
-      processLines requestedFuncs
+    match parseTarget arg with
+    | .ok target =>
+      processLines target
     | .error msg =>
       IO.eprintln msg
       return 1

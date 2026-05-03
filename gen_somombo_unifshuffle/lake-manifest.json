@@ -1,15 +1,16 @@
-{"version": "1.1.0",
+{"version": "1.2.0",
  "packagesDir": ".lake/packages",
  "packages":
  [{"url": "https://github.com/leanprover/lean4-cli",
    "type": "git",
    "subDir": null,
    "scope": "",
-   "rev": "123e054b20c24bd5cf4ec97ea1a343f98c80b32d",
+   "rev": "6b907cf12b2e445ccb7c24bc208ef04a1f39e84c",
    "name": "Cli",
    "manifestFile": "lake-manifest.json",
-   "inputRev": "v4.22.0+patch1",
+   "inputRev": "v4.30.0",
    "inherited": false,
    "configFile": "lakefile.toml"}],
  "name": "BenchLabUniformShuffle",
- "lakeDir": ".lake"}
+ "lakeDir": ".lake",
+ "fixedToolchain": false}

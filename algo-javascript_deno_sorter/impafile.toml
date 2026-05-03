@@ -1,7 +1,0 @@
-name = "deno_sorter"
-type = "algorithm"
-language = "deno"
-
-[run]
-command = "deno"
-args = ["run", "--allow-sys", "../algo-javascript_nodejs_sorter/main.js"]

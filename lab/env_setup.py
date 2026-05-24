@@ -3,12 +3,6 @@ import sys
 import subprocess
 import shutil
 
-# Constants
-REPO_URL = "https://github.com/somombo/sort-bench.git"
-
-
-
-
 def _run_command(command, check=True, shell=False, capture_output=False):
     """
     Internal helper to run shell commands via subprocess.
@@ -168,6 +162,52 @@ def setup_haskell(ghc_version="latest", cabal_version="latest"):
         # Add to PATH for immediate use
         os.environ['PATH'] = f"{os.environ['HOME']}/.ghcup/bin:{os.environ['PATH']}"
         print("Haskell installed.")
+
+def setup_ocaml(version="5.4.1", opam_version="2.5.1"):
+    """Installs the OCaml toolchain (OPAM and compiler) if missing, and loads opam env."""
+
+    print("--- Checking OCaml Toolchain ---")
+    local_bin = f"{os.environ['HOME']}/.local/bin"
+    if local_bin not in os.environ['PATH'].split(':'):
+        os.environ['PATH'] = f"{local_bin}:{os.environ['PATH']}"
+
+    try:
+        _run_command(['opam', '--version'], capture_output=True)
+        print("OCaml (OPAM/ocamlc) is already installed.")
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        print(f"OCaml toolchain or OPAM not found. Installing OPAM and OCaml {version}...")
+        # Download official OPAM binary release (non-interactive)
+        opam_url = f"https://github.com/ocaml/opam/releases/download/{opam_version}/opam-{opam_version}-x86_64-linux"
+        _run_command(f"mkdir -p {local_bin} && curl -fsSL {opam_url} -o {local_bin}/opam && chmod +x {local_bin}/opam", shell=True)
+        # Initialize OPAM and compiler without interactive prompt
+        _run_command(f"opam init --reinit -ni --disable-sandboxing --compiler=ocaml-base-compiler.{version}", shell=True)
+        print("OCaml installed.")
+
+    try:
+        _run_command(['ocamlopt', '--version'], capture_output=True)
+        print("OCaml toolchain (ocamlopt/ocamlc) is already installed.")
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        print(f"OCaml toolchain not found. Checking `opam env` ...")
+
+        # Dynamically load the environment variables from 'opam env'
+        try:
+            import re
+            env_output = _run_command(['opam', 'env'], capture_output=True).stdout
+            for line in env_output.splitlines():
+                match = re.match(r"^\s*([A-Za-z0-9_]+)='(.*?)';\s*export", line)
+                if match:
+                    var_name, var_value = match.groups()
+                    os.environ[var_name] = var_value
+            print("Loaded OCaml environment variables via 'opam env'.")
+        except Exception as e:
+            print(f"Warning: Failed to load opam environment: {e}", file=sys.stderr)
+            # Fallback to default path addition
+            os.environ['PATH'] = f"{os.environ['HOME']}/.opam/default/bin:{os.environ['PATH']}"
+
+
+# Constants
+# REPO_URL = "https://github.com/somombo/sort-bench.git"
+
 
 # def clone_repository(destination="/tmp/AlgoBench"):
 #     """Clones the source code repository."""

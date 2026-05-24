@@ -1,17 +1,19 @@
 name = "BenchLabUniformShuffle"
 version = "0.1.0"
-defaultTargets = ["bench"]
+defaultTargets = ["UnifShuffle"]
 
 
 [[lean_lib]]
 name = "ShuffleSample"
 
 [[lean_lib]]
-name = "RandomArray"
+name = "UnifShuffle"
+
 
 [[lean_exe]]
 name = "data_generator_multi"
 root = "Main_Multi"
+buildType = "release"
 
 [[lean_exe]]
 name = "data_generator"

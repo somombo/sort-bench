@@ -1,32 +1,22 @@
 import process from "node:process";
 
 /**
- * Parses command line arguments to extract the requested sorting functions.
+ * Parses command line arguments to extract the requested sorting function.
  * @param {string[]} args
- * @returns {string[]}
+ * @returns {string}
  */
 function parseArguments(args) {
-    const prefix = "--functions=";
-    const targetArg = args.find(arg => arg.startsWith(prefix));
-    
-    if (!targetArg) {
-        process.stderr.write("Error: Must specify exactly one argument in the format --functions=func1,func2\n");
+    const userArgs = args.slice(2);
+    if (userArgs.length !== 1) {
+        process.stderr.write("Error: Must specify exactly one function argument.\n");
         process.exit(1);
     }
-
-    const functionsList = targetArg.slice(prefix.length);
-    if (!functionsList) {
-        process.stderr.write("Error: No functions specified.\n");
+    const func = userArgs[0].trim();
+    if (!func) {
+        process.stderr.write("Error: Empty function name requested.\n");
         process.exit(1);
     }
-
-    const functions = functionsList.split(',').map(f => f.trim()).filter(Boolean);
-    if (functions.length === 0) {
-        process.stderr.write("Error: No valid functions extracted from argument.\n");
-        process.exit(1);
-    }
-
-    return functions;
+    return func;
 }
 
 /**
@@ -49,25 +39,31 @@ function validateFunction(funcName) {
 /**
  * Processes a single comma-separated string of benchmark data, sorts it, and outputs the timing.
  * @param {string} line 
- * @param {string[]} functions 
+ * @param {string} func 
  */
-function processLine(line, functions) {
+function processLine(line, func) {
     const trimmedLine = line.trim();
     if (!trimmedLine) return;
 
-    const parts = trimmedLine.split(',');
-    const id = parts[0].trim();
-    
+    const pipeParts = trimmedLine.split('|');
+    if (pipeParts.length < 2) {
+        process.stderr.write("Error: Malformed line. Expected pipe separator '|'.\n");
+        process.exit(1);
+    }
+
+    const id = pipeParts[0].trim();
     if (!id) {
         process.stderr.write("Error: Malformed line. Empty or missing ID.\n");
         process.exit(1);
     }
 
-    const maxTokens = parts.length - 1;
-    const tempArray = new Uint32Array(maxTokens);
+    const arrayData = pipeParts[1];
+    const parts = arrayData.split(',');
+
+    const tempArray = new Uint32Array(parts.length);
     let validCount = 0;
 
-    for (let i = 1; i < parts.length; i++) {
+    for (let i = 0; i < parts.length; i++) {
         const token = parts[i].trim();
         if (!token) continue;
 
@@ -86,45 +82,42 @@ function processLine(line, functions) {
 
     const masterArray = new Uint32Array(tempArray.buffer, 0, validCount);
 
-    for (const func of functions) {
-        let duration = 0n;
-        const compare = (a, b) => {
-            if (a < b) return -1;
-            if (a > b) return 1;
-            return 0;
-        }
-        if (func === "TypedArray.sort") {
-            const arrayCopy = new Uint32Array(masterArray);
-            const start = process.hrtime.bigint();
-            arrayCopy.sort();
-            const end = process.hrtime.bigint();
-            duration = end - start;
-        } else if (func === "TypedArray.toSorted") {
-            const start = process.hrtime.bigint();
-            masterArray.toSorted();
-            const end = process.hrtime.bigint();
-            duration = end - start;
-        } else if (func === "Array.sort") {
-            const arrayCopy = Array.from(masterArray);
-            const start = process.hrtime.bigint();
-            arrayCopy.sort(compare);
-            const end = process.hrtime.bigint();
-            duration = end - start;
-        } else if (func === "Array.toSorted") {
-            const arrayCopy = Array.from(masterArray);
-            const start = process.hrtime.bigint();
-            arrayCopy.toSorted(compare);
-            const end = process.hrtime.bigint();
-            duration = end - start;
-        }
-
-        process.stdout.write(`${id},${func},${duration.toString()}\n`);
+    let duration = 0n;
+    const compare = (a, b) => {
+        if (a < b) return -1;
+        if (a > b) return 1;
+        return 0;
     }
+    if (func === "TypedArray.sort") {
+        const start = process.hrtime.bigint();
+        masterArray.sort();
+        const end = process.hrtime.bigint();
+        duration = end - start;
+    } else if (func === "TypedArray.toSorted") {
+        const start = process.hrtime.bigint();
+        masterArray.toSorted();
+        const end = process.hrtime.bigint();
+        duration = end - start;
+    } else if (func === "Array.sort") {
+        const arrayCopy = Array.from(masterArray);
+        const start = process.hrtime.bigint();
+        arrayCopy.sort(compare);
+        const end = process.hrtime.bigint();
+        duration = end - start;
+    } else if (func === "Array.toSorted") {
+        const arrayCopy = Array.from(masterArray);
+        const start = process.hrtime.bigint();
+        arrayCopy.toSorted(compare);
+        const end = process.hrtime.bigint();
+        duration = end - start;
+    }
+
+    process.stdout.write(`${duration.toString()}|${id}\n`);
 }
 
 async function main() {
-    const functions = parseArguments(process.argv);
-    functions.forEach(validateFunction);
+    const func = parseArguments(process.argv);
+    validateFunction(func);
 
     let stdinStream;
     if (typeof Deno !== "undefined") {
@@ -153,12 +146,12 @@ async function main() {
         while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
             const line = buffer.slice(0, newlineIndex);
             buffer = buffer.slice(newlineIndex + 1);
-            processLine(line, functions);
+            processLine(line, func);
         }
     }
     
     if (buffer.length > 0) {
-        processLine(buffer, functions);
+        processLine(buffer, func);
     }
 }
 

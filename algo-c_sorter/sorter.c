@@ -94,83 +94,81 @@ void buffer_append(uint32_buffer_t* buf, uint32_t val) {
     buf->data[buf->size++] = val;
 }
 
-void process_line(char* line, char** target_algos, int num_targets, uint32_buffer_t* original_array, uint32_buffer_t* array_copy) {
-    char* saveptr;
-    char* id_token = strtok_r(line, ",", &saveptr);
-    if (!id_token) return;
+void process_line(char* line, const char* target_algo, uint32_buffer_t* original_array) {
+    char* pipe_ptr = strchr(line, '|');
+    if (!pipe_ptr) {
+        fprintf(stderr, "Error: Malformed line (missing '|' separator).\n");
+        exit(1);
+    }
+    *pipe_ptr = '\0';
+    char* id_token = line;
+    char* array_data = pipe_ptr + 1;
     
     char* id = trim_whitespace(id_token);
     if (strlen(id) == 0) return;
 
     original_array->size = 0;
 
-    char* token;
-    while ((token = strtok_r(NULL, ",", &saveptr)) != NULL) {
+    char* saveptr;
+    char* token = strtok_r(array_data, ",", &saveptr);
+    while (token != NULL) {
         token = trim_whitespace(token);
-        if (strlen(token) == 0) continue;
-        buffer_append(original_array, parse_strict_uint32(token));
+        if (strlen(token) > 0) {
+            buffer_append(original_array, parse_strict_uint32(token));
+        }
+        token = strtok_r(NULL, ",", &saveptr);
     }
 
     if (original_array->size == 0) {
         return;
     }
 
-    for (int i = 0; i < num_targets; i++) {
-        algorithm_entry_t* entry = NULL;
-        for (int j = 0; registry[j].name != NULL; j++) {
-            if (strcmp(target_algos[i], registry[j].name) == 0) {
-                entry = &registry[j];
-                break;
-            }
+    algorithm_entry_t* entry = NULL;
+    for (int j = 0; registry[j].name != NULL; j++) {
+        if (strcmp(target_algo, registry[j].name) == 0) {
+            entry = &registry[j];
+            break;
         }
-
-        if (!entry) {
-            fprintf(stderr, "Error: Unknown function '%s' requested.\n", target_algos[i]);
-            exit(1);
-        }
-
-        if (array_copy->capacity < original_array->size) {
-            array_copy->capacity = original_array->size;
-            array_copy->data = safe_realloc(array_copy->data, array_copy->capacity * sizeof(uint32_t));
-        }
-        array_copy->size = original_array->size;
-        memcpy(array_copy->data, original_array->data, original_array->size * sizeof(uint32_t));
-
-        struct timespec start, end;
-        clock_gettime(CLOCK_MONOTONIC, &start);
-        entry->func(array_copy->data, array_copy->size);
-        clock_gettime(CLOCK_MONOTONIC, &end);
-
-        long long duration_ns = (long long)(end.tv_sec - start.tv_sec) * 1000000000LL + (end.tv_nsec - start.tv_nsec);
-
-        printf("%s,%s,%lld\n", id, entry->name, duration_ns);
-        fflush(stdout);
     }
+
+    if (!entry) {
+        fprintf(stderr, "Error: Unknown function '%s' requested.\n", target_algo);
+        exit(1);
+    }
+
+    struct timespec start, end;
+    clock_gettime(CLOCK_MONOTONIC, &start);
+    entry->func(original_array->data, original_array->size);
+    clock_gettime(CLOCK_MONOTONIC, &end);
+
+    long long duration_ns = (long long)(end.tv_sec - start.tv_sec) * 1000000000LL + (end.tv_nsec - start.tv_nsec);
+
+    printf("%lld|%s\n", duration_ns, id);
+    fflush(stdout);
 }
 
 int main(int argc, char* argv[]) {
-    if (argc != 2 || strncmp(argv[1], "--functions=", 12) != 0) {
-        fprintf(stderr, "Usage: %s --functions=func1,func2\n", argv[0]);
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <function>\n", argv[0]);
         return 1;
     }
 
-    char* functions_arg = safe_strdup(argv[1] + 12);
-    int num_targets = 0;
-    char** target_algos = NULL;
-
-    char* saveptr;
-    char* token = strtok_r(functions_arg, ",", &saveptr);
-    while (token) {
-        token = trim_whitespace(token);
-        if (strlen(token) > 0) {
-            target_algos = safe_realloc(target_algos, (num_targets + 1) * sizeof(char*));
-            target_algos[num_targets++] = safe_strdup(token);
-        }
-        token = strtok_r(NULL, ",", &saveptr);
+    const char* target_algo = argv[1];
+    if (strlen(target_algo) == 0) {
+        fprintf(stderr, "Error: Empty function name requested.\n");
+        return 1;
     }
 
-    if (num_targets == 0) {
-        fprintf(stderr, "Error: No functions provided.\n");
+    // Check if function name exists in registry immediately
+    int found = 0;
+    for (int j = 0; registry[j].name != NULL; j++) {
+        if (strcmp(target_algo, registry[j].name) == 0) {
+            found = 1;
+            break;
+        }
+    }
+    if (!found) {
+        fprintf(stderr, "Error: Unknown function '%s' requested.\n", target_algo);
         return 1;
     }
 
@@ -179,21 +177,15 @@ int main(int argc, char* argv[]) {
     ssize_t read;
 
     uint32_buffer_t original_array = {NULL, 0, 0};
-    uint32_buffer_t array_copy = {NULL, 0, 0};
 
     while ((read = getline(&line, &len, stdin)) != -1) {
         char* trimmed_line = trim_whitespace(line);
         if (strlen(trimmed_line) == 0) continue;
-        process_line(trimmed_line, target_algos, num_targets, &original_array, &array_copy);
+        process_line(trimmed_line, target_algo, &original_array);
     }
 
     free(line);
     free(original_array.data);
-    free(array_copy.data);
-
-    for (int i = 0; i < num_targets; i++) free(target_algos[i]);
-    free(target_algos);
-    free(functions_arg);
 
     return 0;
 }

@@ -1,24 +1,80 @@
 {
   "components": {
+    "bun": {
+      "type": "executor",
+      "command": "bun",
+      "args": [
+        "run",
+        "./main.js"
+      ],
+      "working_dir": "algo-javascript_sorter"
+    },
+    "c": {
+      "type": "executor",
+      "command": "./sorter_c_exe",
+      "working_dir": "algo-c_sorter"
+    },
     "cpp": {
       "type": "executor",
       "command": "./sorter_cpp_exe",
       "working_dir": "algo-cpp_sorter"
     },
-    "somombo_unifshuffle_multi": {
-      "type": "generator",
-      "command": ".lake/build/bin/data_generator_multi",
-      "working_dir": "gen_somombo_unifshuffle"
+    "deno": {
+      "type": "executor",
+      "command": "deno",
+      "args": [
+        "run",
+        "--allow-sys",
+        "./main.js"
+      ],
+      "working_dir": "algo-javascript_sorter"
+    },
+    "golang": {
+      "type": "executor",
+      "command": "./sorter_go_exe",
+      "working_dir": "algo-go_sorter"
+    },
+    "lean": {
+      "type": "executor",
+      "command": ".lake/build/bin/sorter_lean",
+      "working_dir": "algo-lean_sorter"
+    },
+    "nodejs": {
+      "type": "executor",
+      "command": "node",
+      "args": [
+        "main.js"
+      ],
+      "working_dir": "algo-javascript_sorter"
+    },
+    "python": {
+      "type": "executor",
+      "command": "uv",
+      "args": [
+        "run",
+        "main.py"
+      ],
+      "working_dir": "algo-python_sorter"
+    },
+    "rust": {
+      "type": "executor",
+      "command": "target/release/algo-rust_sorter",
+      "working_dir": "algo-rust_sorter"
     },
     "somombo_unifshuffle": {
       "type": "generator",
       "command": ".lake/build/bin/data_generator",
       "working_dir": "gen_somombo_unifshuffle"
     },
-    "lean": {
+    "somombo_unifshuffle_multi": {
+      "type": "generator",
+      "command": ".lake/build/bin/data_generator_multi",
+      "working_dir": "gen_somombo_unifshuffle"
+    },
+    "zig": {
       "type": "executor",
-      "command": ".lake/build/bin/sorter_lean",
-      "working_dir": "algo-lean_sorter"
+      "command": "zig-out/bin/sorter_zig_exe",
+      "working_dir": "algo-zig_sorter"
     }
   }
 }

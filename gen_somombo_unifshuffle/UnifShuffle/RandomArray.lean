@@ -1,3 +1,5 @@
+-- module
+
 import ShuffleSample
 attribute [grind →] Membership.mem.upper -- TODO: somombo) should be added upstream
 def dbg {α : Type u} [ToString α]  (a : α) (s : String) : α :=
@@ -18,7 +20,7 @@ def Array.toPopulation {α : Type} (counts: Array Nat)
   return population
 
 
-def Array.unifRandNats (cardinality : Nat) (multiplicity : Nat := 1)
+/- public -/ def Array.unifRandNats (cardinality : Nat) (multiplicity : Nat := 1)
     (swaps : Option Nat := none) (descending := false) : IO (Array Nat) := do
   if cardinality ≤ 0 then
     throw $ IO.userError s!"ERROR: The cardinality {cardinality} must be a positive natural number."
@@ -95,7 +97,7 @@ many times and other values are unique.
 
 The function operates in the `IO` monad to handle random number generation.
 -/
-def Array.randNatsWithDominantVal (size : Nat) (duplicate_ratio : Float := 0)
+/- public -/ def Array.randNatsWithDominantVal (size : Nat) (duplicate_ratio : Float := 0)
     (swaps_ratio : Float := 1) (reverse := false)
     : IO (Array Nat) := do
   if size = 0 then return #[]

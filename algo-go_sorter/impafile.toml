@@ -15,4 +15,4 @@ args = ["build.sh"]
 
 [components.run]
 # The executable path relative to this file
-command = "sorter_go_exe"
+command = "./sorter_go_exe"

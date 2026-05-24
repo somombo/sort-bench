@@ -69,7 +69,7 @@ void benchmarkArray(const std::string& line, const std::string& algoName, const 
     std::stringstream ss(line);
     std::string idToken;
     
-    if (!std::getline(ss, idToken, ',')) {
+    if (!std::getline(ss, idToken, '|')) {
         return;
     }
     
@@ -94,11 +94,6 @@ void benchmarkArray(const std::string& line, const std::string& algoName, const 
     }
 
         auto it = algorithmRegistry.find(algoName);
-        if (it == algorithmRegistry.end()) {
-            std::cerr << "Error: Unknown function '" << algoName << "' requested.\n";
-            std::exit(1);
-        }
-
         const SortRoutine& sortRoutine = it->second;
 
         auto start = std::chrono::steady_clock::now();
@@ -107,7 +102,7 @@ void benchmarkArray(const std::string& line, const std::string& algoName, const 
 
         auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
 
-        std::cout << id << "," << duration << "\n" << std::flush;
+        std::cout << duration << "|" << id << "\n" << std::flush;
 }
 
 int main(int argc, char* argv[]) {
@@ -115,11 +110,11 @@ int main(int argc, char* argv[]) {
     std::cin.tie(NULL);
 
     if (argc != 2) {
-        std::cerr << "Error: Usage: " << argv[0] << " --functions=func1,func2\n";
+        std::cerr << "Error: Usage: " << argv[0] << " <function>\n";
         std::exit(1);
     }
 
-    const std::string&  algoName = argv[1];
+    const std::string algoName = argv[1];
     if (algoName.empty()) {
         std::cerr << "Error: No executor target provided in argument.\n";
         std::exit(1);
@@ -133,6 +128,11 @@ int main(int argc, char* argv[]) {
             std::stable_sort(v.begin(), v.end()); 
         }}
     };
+
+    if (algorithmRegistry.find(algoName) == algorithmRegistry.end()) {
+        std::cerr << "Error: Unknown function '" << algoName << "' requested.\n";
+        std::exit(1);
+    }
 
     std::string line;
     while (std::getline(std::cin, line)) {

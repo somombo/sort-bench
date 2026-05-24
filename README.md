@@ -89,17 +89,25 @@ Both generators and algorithms are self-contained executable projects. To integr
 ```toml
 # Example impafile.toml for a C++ Sorter
 
-name = "algo-cpp_sorter"
-type = "algorithm"
-language = "cpp"
+[[components]]
+name = "cpp"
+type = "executor"
 
-[build]
-command = "g++"
-args = ["-O3", "-std=c++20", "sorter.cpp", "-o", "sorter"]
+[components.build]
+command = "c++"
+args = [
+    "-DNDEBUG",
+    "-std=c++17",
+    "-O3",
+    "-Wall",
+    "-Wextra",
+    "sorter.cpp",
+    "-o",
+    "sorter_cpp_exe",
+]
 
-[run]
-command = "./sorter"
-args = []
+[components.run]
+command = "./sorter_cpp_exe"
 ```
 
 ### AI-Assisted Development

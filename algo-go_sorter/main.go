@@ -15,44 +15,17 @@ import (
 // SortRoutine defines the signature for sorting algorithms benchmarked by this tool.
 type SortRoutine func([]uint32)
 
-// parseAlgorithms extracts a list of algorithm names from the command-line argument.
-// It expects the argument to be in the format "--functions=func1,func2".
-func parseAlgorithms(cliArg string) []string {
-	const prefix = "--functions="
-	if !strings.HasPrefix(cliArg, prefix) {
-		fmt.Fprintf(os.Stderr, "Error: Invalid argument format. Expected %s...\n", prefix)
-		os.Exit(1)
-	}
-
-	csvList := strings.TrimPrefix(cliArg, prefix)
-	if csvList == "" {
-		fmt.Fprintf(os.Stderr, "Error: No functions provided in argument.\n")
-		os.Exit(1)
-	}
-
-	var algorithms []string
-	for _, algoName := range strings.Split(csvList, ",") {
-		algoName = strings.TrimSpace(algoName)
-		if algoName != "" {
-			algorithms = append(algorithms, algoName)
-		}
-	}
-
-	if len(algorithms) == 0 {
-		fmt.Fprintf(os.Stderr, "Error: No valid functions extracted from argument.\n")
-		os.Exit(1)
-	}
-
-	return algorithms
-}
-
 func main() {
 	if len(os.Args) != 2 {
-		fmt.Fprintf(os.Stderr, "Error: Usage: %s --functions=func1,func2\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Error: Usage: %s <function>\n", os.Args[0])
 		os.Exit(1)
 	}
 
-	targetAlgorithms := parseAlgorithms(os.Args[1])
+	targetAlgo := os.Args[1]
+	if targetAlgo == "" {
+		fmt.Fprintf(os.Stderr, "Error: Empty function name requested.\n")
+		os.Exit(1)
+	}
 
 	algorithmRegistry := map[string]SortRoutine{
 		"slices.Sort": func(v []uint32) {
@@ -76,11 +49,9 @@ func main() {
 		},
 	}
 
-	for _, algoName := range targetAlgorithms {
-		if _, exists := algorithmRegistry[algoName]; !exists {
-			fmt.Fprintf(os.Stderr, "Error: Unknown function '%s' requested.\n", algoName)
-			os.Exit(1)
-		}
+	if _, exists := algorithmRegistry[targetAlgo]; !exists {
+		fmt.Fprintf(os.Stderr, "Error: Unknown function '%s' requested.\n", targetAlgo)
+		os.Exit(1)
 	}
 
 	reader := bufio.NewReader(os.Stdin)
@@ -94,7 +65,7 @@ func main() {
 			if err != nil {
 				if err == io.EOF {
 					if len(lineBuffer) > 0 {
-						benchmarkArray(string(lineBuffer), targetAlgorithms, algorithmRegistry, writer)
+						benchmarkArray(string(lineBuffer), targetAlgo, algorithmRegistry, writer)
 					}
 					return
 				}
@@ -108,33 +79,36 @@ func main() {
 			}
 		}
 
-		benchmarkArray(string(lineBuffer), targetAlgorithms, algorithmRegistry, writer)
+		benchmarkArray(string(lineBuffer), targetAlgo, algorithmRegistry, writer)
 	}
 }
 
-// benchmarkArray parses a single CSV line, executes the requested sorting algorithms,
+// benchmarkArray parses a single pipe-delimited line, executes the requested sorting algorithm,
 // and writes the timing results to the provided buffered writer.
-func benchmarkArray(line string, targetAlgorithms []string, algorithmRegistry map[string]SortRoutine, writer *bufio.Writer) {
+func benchmarkArray(line string, targetAlgo string, algorithmRegistry map[string]SortRoutine, writer *bufio.Writer) {
 	line = strings.TrimSpace(line)
 	if line == "" {
 		return
 	}
 
-	parts := strings.Split(line, ",")
-	if len(parts) == 0 {
-		return
+	pipeParts := strings.SplitN(line, "|", 2)
+	if len(pipeParts) < 2 {
+		fmt.Fprintf(os.Stderr, "Error: Malformed line (missing '|' separator): '%s'\n", line)
+		os.Exit(1)
 	}
 
-	id := strings.TrimSpace(parts[0])
+	id := strings.TrimSpace(pipeParts[0])
 	if id == "" {
 		return
 	}
 
-	var originalArray []uint32
+	arrayData := pipeParts[1]
+	parts := strings.Split(arrayData, ",")
 
-	if len(parts) > 1 {
-		originalArray = make([]uint32, 0, len(parts)-1)
-		for _, token := range parts[1:] {
+	var originalArray []uint32
+	if len(parts) > 0 {
+		originalArray = make([]uint32, 0, len(parts))
+		for _, token := range parts {
 			token = strings.TrimSpace(token)
 			if token == "" {
 				continue
@@ -153,17 +127,12 @@ func benchmarkArray(line string, targetAlgorithms []string, algorithmRegistry ma
 		return
 	}
 
-	for _, algoName := range targetAlgorithms {
-		sortRoutine := algorithmRegistry[algoName]
+	sortRoutine := algorithmRegistry[targetAlgo]
 
-		arrayCopy := make([]uint32, len(originalArray))
-		copy(arrayCopy, originalArray)
+	start := time.Now()
+	sortRoutine(originalArray)
+	duration := time.Since(start)
 
-		start := time.Now()
-		sortRoutine(arrayCopy)
-		duration := time.Since(start)
-
-		fmt.Fprintf(writer, "%s,%s,%d\n", id, algoName, duration.Nanoseconds())
-		writer.Flush()
-	}
+	fmt.Fprintf(writer, "%d|%s\n", duration.Nanoseconds(), id)
+	writer.Flush()
 }

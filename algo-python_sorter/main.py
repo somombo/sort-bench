@@ -4,20 +4,18 @@ import heapq
 
 def main():
     """Reads benchmark data from standard input, times the execution of internal sorting functions, and outputs performance metrics to standard output."""
-    if len(sys.argv) != 2 or not sys.argv[1].startswith("--functions="):
-        sys.stderr.write("Error: Must specify exactly one argument in the format --functions=func1,func2\n")
+    if len(sys.argv) != 2:
+        sys.stderr.write("Usage: python main.py <function>\n")
         sys.exit(1)
 
-    functions_arg = sys.argv[1][12:]
-    if not functions_arg:
-        sys.stderr.write("Error: No functions specified.\n")
+    func = sys.argv[1]
+    if not func:
+        sys.stderr.write("Error: Empty function name requested.\n")
         sys.exit(1)
 
-    funcs = [f for f in functions_arg.split(",") if f]
-    for f in funcs:
-        if f not in ("list.sort", "sorted", "heapq.nsmallest"):
-            sys.stderr.write(f"Error: Unrecognized function {f}\n")
-            sys.exit(1)
+    if func not in ("list.sort", "sorted", "heapq.nsmallest"):
+        sys.stderr.write(f"Error: Unrecognized function {func}\n")
+        sys.exit(1)
 
     stdin = sys.stdin
     stdout = sys.stdout
@@ -27,16 +25,17 @@ def main():
         if not line:
             continue
         
-        parts = line.split(',')
-        if len(parts) < 1:
-            sys.stderr.write("Error: Invalid line format.\n")
+        pipe_parts = line.split('|', 1)
+        if len(pipe_parts) < 2:
+            sys.stderr.write("Error: Invalid line format. Expected pipe character.\n")
             sys.exit(1)
 
-        id_str = parts[0]
+        id_str = pipe_parts[0]
+        parts = pipe_parts[1].split(',')
         master_arr = []
         
         try:
-            for x in parts[1:]:
+            for x in parts:
                 if x:
                     val = int(x)
                     if val < 0 or val > 4294967295:
@@ -46,25 +45,22 @@ def main():
             sys.stderr.write("Error: Invalid uint32 token.\n")
             sys.exit(1)
 
-        for func in funcs:
-            copy_arr = master_arr.copy()
-            
-            if func == "list.sort":
-                t0 = time.perf_counter_ns()
-                copy_arr.sort()
-                t1 = time.perf_counter_ns()
-            elif func == "sorted":
-                t0 = time.perf_counter_ns()
-                _ = sorted(copy_arr)
-                t1 = time.perf_counter_ns()
-            elif func == "heapq.nsmallest":
-                t0 = time.perf_counter_ns()
-                _ = heapq.nsmallest(len(copy_arr), copy_arr)
-                t1 = time.perf_counter_ns()
-            
-            dur = t1 - t0
-            stdout.write(f"{id_str},{func},{dur}\n")
-            stdout.flush()
+        if func == "list.sort":
+            t0 = time.perf_counter_ns()
+            master_arr.sort()
+            t1 = time.perf_counter_ns()
+        elif func == "sorted":
+            t0 = time.perf_counter_ns()
+            _ = sorted(master_arr)
+            t1 = time.perf_counter_ns()
+        elif func == "heapq.nsmallest":
+            t0 = time.perf_counter_ns()
+            _ = heapq.nsmallest(len(master_arr), master_arr)
+            t1 = time.perf_counter_ns()
+        
+        dur = t1 - t0
+        stdout.write(f"{dur}|{id_str}\n")
+        stdout.flush()
 
 if __name__ == "__main__":
     main()

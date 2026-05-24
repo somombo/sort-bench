@@ -19,15 +19,16 @@ from typing import Any, Dict, List
 def parse_results(results: List[Dict[str, Any]]) -> pd.DataFrame:
     df_results = pd.DataFrame(results)
     df_results['swaps'] = df_results['swaps'].astype('Int64')
-    df_results[['micro_rep_id', 'micro_run_id', 'data_hash']] = df_results['data_id'].str.split('_', expand=True)
+
+    if 'data_id' in df_results:
+        df_results[['datagen_index', 'run_index', 'data_hash']] = df_results['data_id'].str.split('_', expand=True)
+
     df_results['task_str'] = \
         df_results['executor'].astype(str) + ' ' + df_results['args'].str.join(" ")
 
     columns=[
-        'macro_rep_id', 
-        'macro_run_id', 
-        'micro_rep_id', 
-        'micro_run_id', 
+        'datagen_index', 
+        'run_index', 
         'data_hash', 
         'executor', 
         'args', 
@@ -41,27 +42,30 @@ def parse_results(results: List[Dict[str, Any]]) -> pd.DataFrame:
     ]
     return df_results.reindex(columns=columns)
 
+def _clean_results(df : pd.DataFrame)-> pd.DataFrame:
+    if df.empty: return df
+
+    # Filter for minimum duration per group to remove system jitter
+    df_filtered = df.loc[df.groupby(['data_hash', 'task_str'])['duration'].idxmin()] #.reset_index()
+
+    # A maximal swap (equal to the size of the input array) param is denoted by None
+    # The size of the input array can be inferred as the product of its cardinality and multiplicity
+    df_filtered['size'] = df_filtered['cardinality'] * df_filtered['multiplicity']
+    df_filtered['swaps'] = df_filtered['swaps'].fillna(df_filtered['size']).astype('int64')
+    # if 'experiment_name' in df_filtered:
+    #     df_filtered['lang_fn_name'] = '[' + df_filtered['experiment_name'].astype(str) + '] ' + df_filtered['task_str'].astype(str)
+    df_filtered['lang_fn_name'] = df_filtered['task_str'].astype(str)
+    return df_filtered
+
 class Explorer:
-    def _clean_results(self, df : pd.DataFrame)-> pd.DataFrame:
-        if df.empty: return df
-
-        # Filter for minimum duration per group to remove system jitter
-        df_filtered = df.loc[df.groupby(['macro_run_id', 'micro_run_id', 'data_hash', 'task_str'])['duration'].idxmin()] #.reset_index()
-
-        # A maximal swap (equal to the size of the input array) param is denoted by None
-        # The size of the input array can be inferred as the product of its cardinality and multiplicity
-        df_filtered['size'] = df_filtered['cardinality'] * df_filtered['multiplicity']
-        df_filtered['swaps'] = df_filtered['swaps'].fillna(df_filtered['size']).astype('int64')
-        df_filtered['lang_fn_name'] = '[' + df_filtered['experiment_name'].astype(str) + '] ' + df_filtered['task_str'].astype(str)
-
-        return df_filtered
     
     def __init__(
         self,
-        raw_df: pd.DataFrame,
+        clean_df: pd.DataFrame,
     ):
-        self.raw_df = raw_df
-        self.clean_df = self._clean_results(raw_df)
+        self.clean_df = clean_df
+        
+        
 
     def get_raw_data(self) -> pd.DataFrame:
         return self.raw_df
@@ -316,4 +320,68 @@ def ExplorerFromResults(results: List[Dict[str, Any]], experiment_name: str|None
 
     if experiment_name:
         raw_df = raw_df.assign(experiment_name=pd.Series(experiment_name, index=raw_df.index, dtype='category'))
-    return Explorer(raw_df)
+
+    clean_df = _clean_results(raw_df)
+    exp = Explorer(clean_df)
+    exp.raw_df = raw_df
+    return exp
+
+
+def parse_df_results(df_results: pd.DataFrame) -> pd.DataFrame:
+
+    df_results = df_results.rename(columns={
+        'task_index': 'task_index',
+        'executor': 'executor',
+        'args': 'args',
+        'rep_index': 'rep_id',
+        'data_token': 'data_token',
+        'metric': 'duration',
+        'task_label': 'task_str',
+        'gen.cardinality': 'cardinality',
+        'gen.descending': 'descending',
+        'gen.id': 'data_id',
+        'gen.multiplicity': 'multiplicity',
+        'gen.seed': 'seed', 
+        'gen.swaps': 'swaps', 
+    })
+
+
+    df_results['swaps'] = df_results['swaps'].astype('Int64')
+
+    if 'data_id' in df_results:
+        df_results[['datagen_index', 'run_index', 'data_hash']] = df_results['data_id'].str.split('_', expand=True)
+
+    df_results['task_str'] = \
+        df_results['executor'].astype(str) + ' ' + df_results['args'].str.join(" ")
+
+    columns=[
+        'rep_id', 
+        'datagen_index', 
+        'run_index', 
+        'data_hash', 
+        'executor', 
+        'args', 
+        'task_str', 
+        'cardinality', 
+        'multiplicity', 
+        'swaps', 
+        'descending', 
+        'seed', 
+        'duration',
+    ]
+
+    if 'attr.experiment_name' in df_results:
+        df_results['experiment_name'] = df_results['attr.experiment_name'].astype('category')
+        del df_results['attr.experiment_name']
+        columns.append('experiment_name')
+    return df_results.reindex(columns=columns)
+
+from impalab_py import LabFromResults
+def ExplorerFromLabDf(results: List[Dict[str, Any]]) -> Explorer:
+    lab = LabFromResults(results)
+    df = lab.to_dataframe()
+    raw_df = parse_df_results(df)
+    exp = Explorer(_clean_results(raw_df))
+    exp.raw_df = raw_df
+    exp.lab = lab
+    return exp

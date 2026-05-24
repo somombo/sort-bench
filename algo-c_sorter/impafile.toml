@@ -16,4 +16,4 @@ args = [
 ]
 
 [components.run]
-command = "sorter_c_exe"
+command = "./sorter_c_exe"

@@ -1,4 +1,6 @@
-import Std.Data
+module
+
+public import Std.Data
 open Std
 -- def dbg {α : Type u} [ToString α]  (a : α) (s : String) : α :=
 --   dbgTrace s!"{s}" (fun _ => a)
@@ -20,7 +22,7 @@ open Std
 --   return arr[:sample_size]
 
 /-- Partial Fisher-Yates at provided indices -/
-def Array.shuffle (arr : Array α) (indices : HashSet Nat := Array.range (arr.size - 1) |> HashSet.ofArray) :
+public def Array.shuffle (arr : Array α) (indices : HashSet Nat := Array.range (arr.size - 1) |> HashSet.ofArray) :
     IO (Array α) := do
   if arr.size < 2 then return arr
   if indices.isEmpty then return arr
@@ -34,7 +36,7 @@ def Array.shuffle (arr : Array α) (indices : HashSet Nat := Array.range (arr.si
   return arr
 
 /-- Algorithm S Resevior Sampling-/
-def Array.sample {α : Type} (arr : Array α) (sample_size : Nat) :
+public def Array.sample {α : Type} (arr : Array α) (sample_size : Nat) :
     IO (Array α) := do
   if sample_size > arr.size then
     throw $ IO.userError s!"Error: sample size ({sample_size}) cannot \
@@ -68,7 +70,7 @@ then returns `sample_size` elements using Algorithm S (reservoir sampling).
 
 Returns an `IO (Array α)` containing the sampled elements.
 -/
-def Array.partialShuffleSample  {α : Type} (arr : Array α) (sample_size : Nat := arr.size)
+public def Array.partialShuffleSample  {α : Type} (arr : Array α) (sample_size : Nat := arr.size)
     (swaps : Nat := sample_size - 1)  : IO (Array α) := do
   let swaps := min swaps (arr.size - 1)
 

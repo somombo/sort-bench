@@ -1,57 +1,76 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema",
-  "title": "Impafile Configuration for Generators",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ImpafileConfigurationForGenerators",
+  "description": "JSON Schema for generator impafile.toml configurations in Impalab",
   "type": "object",
   "properties": {
-    "name": {
-      "type": "string",
-      "description": "The unique name of the generator component."
-    },
-    "type": {
-      "type": "string",
-      "enum": ["generator"],
-      "description": "The component classification. Must be 'generator'."
-    },
-    "language": {
-      "type": "string",
-      "description": "The primary programming language used for the component."
-    },
-    "build": {
-      "type": "object",
-      "description": "Configuration for building or compiling the component. Optional for interpreted languages.",
-      "properties": {
-        "command": {
-          "type": "string",
-          "description": "The executable command used to build the project."
-        },
-        "args": {
-          "type": "array",
-          "items": {
-            "type": "string"
+    "components": {
+      "type": "array",
+      "description": "A list of components defined within this directory.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Unique identifier for the component."
           },
-          "description": "A list of arguments passed to the build command."
-        }
-      },
-      "required": ["command"]
-    },
-    "run": {
-      "type": "object",
-      "description": "Configuration for executing the component.",
-      "properties": {
-        "command": {
-          "type": "string",
-          "description": "The command or relative executable path to run the component."
-        },
-        "args": {
-          "type": "array",
-          "items": {
-            "type": "string"
+          "type": {
+            "type": "string",
+            "enum": ["generator"],
+            "description": "The component role. Must be 'generator'."
           },
-          "description": "A list of arguments passed to the run command."
-        }
-      },
-      "required": ["command"]
+          "build": {
+            "type": "object",
+            "description": "Instructions on how to compile or build the component.",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "The build tool or executable to run (e.g., 'cargo', 'zig')."
+              },
+              "args": {
+                "type": "array",
+                "description": "Arguments passed to the build command.",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "working_dir": {
+                "type": "string",
+                "description": "Working directory for the build command, relative to impafile.toml."
+              }
+            },
+            "required": ["command"],
+            "additionalProperties": false
+          },
+          "run": {
+            "type": "object",
+            "description": "Instructions on how to run the component executable.",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "The executable or runner to run (e.g., 'python3', './run_binary')."
+              },
+              "args": {
+                "type": "array",
+                "description": "Base arguments passed to the run command.",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "working_dir": {
+                "type": "string",
+                "description": "Working directory for the run command, relative to impafile.toml."
+              }
+            },
+            "required": ["command"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["name", "type", "run"],
+        "additionalProperties": false
+      }
     }
   },
-  "required": ["name", "type", "run"]
+  "required": ["components"],
+  "additionalProperties": false
 }

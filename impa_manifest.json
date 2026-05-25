@@ -47,6 +47,11 @@
       ],
       "working_dir": "components/exec-javascript_sorter"
     },
+    "ocaml": {
+      "type": "executor",
+      "command": "./sorter_ocaml_exe",
+      "working_dir": "components/exec-ocaml_sorter"
+    },
     "python": {
       "type": "executor",
       "command": "uv",

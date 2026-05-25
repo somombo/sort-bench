@@ -1,0 +1,9 @@
+[[components]]
+type = "executor"
+name = "ocaml"
+
+[components.build]
+command = "./build.sh"
+
+[components.run]
+command = "./sorter_ocaml_exe"

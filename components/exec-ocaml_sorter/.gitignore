@@ -1,0 +1,5 @@
+sorter_ocaml_exe
+*.cmi
+*.cmo
+*.cmx
+*.o

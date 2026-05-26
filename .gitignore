@@ -11,7 +11,3 @@ orchestrator/target/**
 /.bin
 .venv
 /data
-
-
-/algo-cpp_sorter/sorter_cpp_exe
-/algo-go_sorter/sorter_go_exe

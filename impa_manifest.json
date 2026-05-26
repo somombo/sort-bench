@@ -7,17 +7,17 @@
         "run",
         "./main.js"
       ],
-      "working_dir": "algo-javascript_sorter"
+      "working_dir": "components/exec-javascript_sorter"
     },
     "c": {
       "type": "executor",
       "command": "./sorter_c_exe",
-      "working_dir": "algo-c_sorter"
+      "working_dir": "components/exec-c_sorter"
     },
     "cpp": {
       "type": "executor",
       "command": "./sorter_cpp_exe",
-      "working_dir": "algo-cpp_sorter"
+      "working_dir": "components/exec-cpp_sorter"
     },
     "deno": {
       "type": "executor",
@@ -27,17 +27,17 @@
         "--allow-sys",
         "./main.js"
       ],
-      "working_dir": "algo-javascript_sorter"
+      "working_dir": "components/exec-javascript_sorter"
     },
     "golang": {
       "type": "executor",
       "command": "./sorter_go_exe",
-      "working_dir": "algo-go_sorter"
+      "working_dir": "components/exec-go_sorter"
     },
     "lean": {
       "type": "executor",
       "command": ".lake/build/bin/sorter_lean",
-      "working_dir": "algo-lean_sorter"
+      "working_dir": "components/exec-lean_sorter"
     },
     "nodejs": {
       "type": "executor",
@@ -45,7 +45,7 @@
       "args": [
         "main.js"
       ],
-      "working_dir": "algo-javascript_sorter"
+      "working_dir": "components/exec-javascript_sorter"
     },
     "python": {
       "type": "executor",
@@ -54,27 +54,27 @@
         "run",
         "main.py"
       ],
-      "working_dir": "algo-python_sorter"
+      "working_dir": "components/exec-python_sorter"
     },
     "rust": {
       "type": "executor",
       "command": "target/release/algo-rust_sorter",
-      "working_dir": "algo-rust_sorter"
+      "working_dir": "components/exec-rust_sorter"
     },
     "somombo_unifshuffle": {
       "type": "generator",
       "command": ".lake/build/bin/data_generator",
-      "working_dir": "gen_somombo_unifshuffle"
+      "working_dir": "components/gen_somombo_unifshuffle"
     },
     "somombo_unifshuffle_multi": {
       "type": "generator",
       "command": ".lake/build/bin/data_generator_multi",
-      "working_dir": "gen_somombo_unifshuffle"
+      "working_dir": "components/gen_somombo_unifshuffle"
     },
     "zig": {
       "type": "executor",
       "command": "zig-out/bin/sorter_zig_exe",
-      "working_dir": "algo-zig_sorter"
+      "working_dir": "components/exec-zig_sorter"
     }
   }
 }

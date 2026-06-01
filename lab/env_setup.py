@@ -69,16 +69,19 @@ def setup_golang(version="1.26.0"):
         os.environ['PATH'] = f"/usr/local/go/bin:{os.environ['PATH']}"
         print("Golang installed.")
 
-def setup_csharp():
+# TODO: v9.0 or even v10.0 would be better by default but they currently dont work in Google Colab. Try to install it in google collab and run `!dotnet --version` in a cell. Fails with use after free or segfaut. 
+# This is a known issue that depends on Google upgrading to newer OS. Look out for if it gets fixed in future to update this default.
+def setup_csharp(version="8.0"): 
     """Installs the C# (.NET) toolchain if missing."""
     print("--- Checking C# (.NET) Toolchain ---")
     try:
         _run_command(['dotnet', '--version'], capture_output=True)
         print("dotnet is already installed.")
     except (subprocess.CalledProcessError, FileNotFoundError):
-        print("dotnet not found. Installing .NET SDK...")
-        _run_command("wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && chmod +x dotnet-install.sh && ./dotnet-install.sh --channel STS && rm dotnet-install.sh", shell=True)
-        os.environ['PATH'] = f"{os.environ['HOME']}/.dotnet:{os.environ['PATH']}"
+        print(f"dotnet not found. Installing .NET SDK {version} ...")
+        _run_command(f"wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && chmod +x ./dotnet-install.sh && ./dotnet-install.sh --channel {version} && rm dotnet-install.sh", shell=True)
+        os.environ['DOTNET_ROOT'] = f"{os.environ['HOME']}/.dotnet"
+        os.environ['PATH'] = f"{os.environ['DOTNET_ROOT']}:{os.environ['PATH']}"
         print("C# (.NET) installed.")
 
 def setup_java(version="25"):

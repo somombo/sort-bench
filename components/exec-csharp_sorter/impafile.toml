@@ -4,16 +4,40 @@ type = "executor"
 
 [components.build]
 command = "dotnet"
+# TODO: v9.0 or even v10.0 would be better `TargetFramework` but they currently dont work in Google Colab. 
+# Try to install it in google collab and run `!dotnet --version` in a cell. Fails with use after free or segfaut. 
+# This is a known issue that depends on Google upgrading to newer OS. Look out for if it gets fixed in future to update this default.
 args = [
   "publish",
   "-c",
   "Release",
-  "-r",
-  "linux-x64",
-  "--self-contained",
-  "true",
-  "-p:PublishAot=true",
+  "-p:PublishAot=false",
+  "-p:TieredCompilation=false",
+  "-p:ServerGarbageCollection=true",
 ]
 
 [components.run]
-command = "bin/Release/net9.0/linux-x64/publish/AlgoCSharpSorter"
+command = "dotnet"
+args = [
+  "bin/Release/net8.0/publish/AlgoCSharpSorter.dll",
+]
+
+# [[components]]
+# name = "csharp-aot"
+# type = "executor"
+
+# [components.build]
+# command = "dotnet"
+# args = [
+#   "publish",
+#   "-c",
+#   "Release",
+#   "-r",
+#   "linux-x64",
+#   "--self-contained",
+#   "true",
+#   "-p:PublishAot=true",
+# ]
+
+# [components.run]
+# command = "bin/Release/net9.0/linux-x64/publish/AlgoCSharpSorter"

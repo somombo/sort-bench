@@ -1,5 +1,5 @@
 name = "SortBench"
-version = "0.1.0"
+version = "0.2.0"
 defaultTargets = ["sorter_lean"]
 
 
@@ -11,15 +11,10 @@ buildType = "release"
 cflags = ["-O3", "-march=native"]
 lflags = ["-static"]
 # release = true 
-# srcDir = "src/Lean"
 
-
-[[lean_lib]]
-name = "SortBench"
 
 [[require]]
 name = "quicksort"
-# path = "../formalized-quicksort"
 git = "https://github.com/somombo/formalized-quicksort"
-rev = "dev_v4.24.0"
+rev = "84228a9687d72b5a823fdebfc91aacbb78f17408" #"dev_v4.28.0"
 

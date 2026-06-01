@@ -8,11 +8,14 @@ open Lean
 def generateUnifData (seed : Option Nat := none) (paramsList : List GenParams) (out : IO.FS.Stream) : IO Unit := do
   if let some s := seed then
     IO.setRandSeed s
+  let max_runs := paramsList <&> GenParams.runs |>.max?.getD 1
 
-  for _':datagen_index in [0:paramsList.length] do
-    let ⟨cardinality, multiplicity, swaps, descending, runs⟩ := paramsList[datagen_index]
+  for run_index in [0:max_runs] do
+    for _':datagen_index in [0:paramsList.length] do
+      let ⟨cardinality, multiplicity, swaps, descending, runs⟩ := paramsList[datagen_index]
+      if run_index >= runs then
+        continue
 
-    for run_index in [0:runs] do
       let arr ← Array.unifRandNats
         (cardinality := cardinality) (multiplicity := multiplicity)
         (swaps := swaps) (descending := descending)
@@ -40,10 +43,10 @@ def generateUnifData (seed : Option Nat := none) (paramsList : List GenParams) (
 section unit_tests
 /--
 info: meta:eyJjYXJkaW5hbGl0eSI6NywiZGVzY2VuZGluZyI6dHJ1ZSwiaWQiOiIwXzBfNTI1NDM0NzcyMzgyMDE2NDA2NiIsIm11bHRpcGxpY2l0eSI6NSwic2VlZCI6IjYiLCJzd2FwcyI6Mn0=|6,6,6,6,6,5,5,5,5,5,4,4,0,4,4,3,3,3,3,3,2,2,2,2,2,1,1,1,1,1,0,0,4,0,0
-meta:eyJjYXJkaW5hbGl0eSI6NywiZGVzY2VuZGluZyI6dHJ1ZSwiaWQiOiIwXzFfNDYxNjA0MzUxNjQ3OTk1OTk0MCIsIm11bHRpcGxpY2l0eSI6NSwic2VlZCI6IjYiLCJzd2FwcyI6Mn0=|6,6,6,6,6,5,5,5,5,5,4,4,4,4,4,3,3,3,3,3,2,2,2,2,2,1,1,0,1,1,0,0,1,0,0
-meta:eyJjYXJkaW5hbGl0eSI6NywiZGVzY2VuZGluZyI6dHJ1ZSwiaWQiOiIwXzJfMTY1MjAwODA3NjI0NzMzNDAzNjciLCJtdWx0aXBsaWNpdHkiOjUsInNlZWQiOiI2Iiwic3dhcHMiOjJ9|6,6,6,1,6,5,5,5,5,5,4,4,4,4,4,3,3,3,3,3,2,2,2,2,2,1,1,1,1,6,0,0,0,0,0
-meta:eyJjYXJkaW5hbGl0eSI6NSwiZGVzY2VuZGluZyI6ZmFsc2UsImlkIjoiMV8wXzM2NjU4NzA4MDg3NzkwNTM0NTUiLCJtdWx0aXBsaWNpdHkiOjcsInNlZWQiOiI2Iiwic3dhcHMiOm51bGx9|1,0,3,1,2,2,4,4,2,1,3,0,4,0,1,0,2,4,1,0,3,3,1,2,4,2,0,4,3,2,3,0,3,1,4
-meta:eyJjYXJkaW5hbGl0eSI6NSwiZGVzY2VuZGluZyI6ZmFsc2UsImlkIjoiMV8xXzE2MDgwNjg4ODk4NTM4OTA3NSIsIm11bHRpcGxpY2l0eSI6Nywic2VlZCI6IjYiLCJzd2FwcyI6bnVsbH0=|4,1,0,4,4,0,0,1,2,3,3,2,3,0,1,2,0,3,2,2,4,1,0,3,3,0,4,4,3,1,2,4,2,1,1
+meta:eyJjYXJkaW5hbGl0eSI6NSwiZGVzY2VuZGluZyI6ZmFsc2UsImlkIjoiMV8wXzQ1NjI2MjE4OTI2NjEzOTg5MzYiLCJtdWx0aXBsaWNpdHkiOjcsInNlZWQiOiI2Iiwic3dhcHMiOm51bGx9|0,2,1,2,2,2,1,0,2,3,0,3,2,4,1,0,1,4,4,3,4,4,4,0,3,2,3,4,1,1,3,3,0,0,1
+meta:eyJjYXJkaW5hbGl0eSI6NywiZGVzY2VuZGluZyI6dHJ1ZSwiaWQiOiIwXzFfNzQ1MzA5MTMwNzg3Mzk4MDkzNiIsIm11bHRpcGxpY2l0eSI6NSwic2VlZCI6IjYiLCJzd2FwcyI6Mn0=|6,6,6,6,6,5,0,5,5,5,4,2,4,4,4,3,3,3,3,3,2,2,2,4,2,1,1,1,1,1,0,0,0,0,5
+meta:eyJjYXJkaW5hbGl0eSI6NSwiZGVzY2VuZGluZyI6ZmFsc2UsImlkIjoiMV8xXzEyMDU2MjMxNjI2OTY3MzY3NzkzIiwibXVsdGlwbGljaXR5Ijo3LCJzZWVkIjoiNiIsInN3YXBzIjpudWxsfQ==|2,3,3,1,3,0,0,0,2,3,3,1,1,3,0,1,0,4,4,1,4,4,4,2,2,0,0,2,3,1,1,2,4,4,2
+meta:eyJjYXJkaW5hbGl0eSI6NywiZGVzY2VuZGluZyI6dHJ1ZSwiaWQiOiIwXzJfNzU3MjYwMTg1MjQxNTc5MjEwMiIsIm11bHRpcGxpY2l0eSI6NSwic2VlZCI6IjYiLCJzd2FwcyI6Mn0=|6,6,6,6,6,5,5,5,5,5,4,4,4,4,4,3,3,3,3,3,2,2,0,1,2,1,1,1,1,2,0,2,0,0,0
 ---
 info: ok: ()
 -/

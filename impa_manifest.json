@@ -39,11 +39,6 @@
       "command": "./sorter_go_exe",
       "working_dir": "components/exec-go_sorter"
     },
-    "haskell": {
-      "type": "executor",
-      "command": "./algo-haskell_sorter",
-      "working_dir": "components/exec-haskell_sorter"
-    },
     "java": {
       "type": "executor",
       "command": "./sorter_java",

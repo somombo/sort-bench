@@ -3,8 +3,20 @@ name = "java"
 type = "executor"
 
 [components.build]
-command = "bash"
-args = ["build.sh"]
+command = "javac"
+args = ["-g:none", "Sorter.java"]
 
 [components.run]
-command = "./sorter_java"
+command = "java"
+args = ["-server", "-XX:+UseParallelGC", "-XX:+AlwaysPreTouch", "-XX:+UseNUMA", "Sorter"]
+
+# [[components]]
+# name = "java-aot"
+# type = "executor"
+
+# [components.build]
+# command = "bash"
+# args = ["build.sh"]
+
+# [components.run]
+# command = "./sorter_java"

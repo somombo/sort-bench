@@ -143,30 +143,6 @@ def setup_deno():
         os.environ['PATH'] = f"{os.environ['HOME']}/.deno/bin:{os.environ['PATH']}"
         print("Deno installed.")
 
-def setup_haskell(ghc_version="latest", cabal_version="latest"):
-    """Installs the Haskell toolchain (GHCup, GHC, Cabal) if missing."""
-    print("--- Checking Haskell Toolchain ---")
-    try:
-        _run_command(['ghc', '--version'], capture_output=True)
-        _run_command(['cabal', '--version'], capture_output=True)
-        print("Haskell (GHC and Cabal) is already installed.")
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        print("Haskell toolchain not found. Installing system prerequisites and via GHCup...")
-        _run_command("sudo apt-get update && sudo apt-get install -y libgmp-dev", shell=True)
-        # Non-interactive installation of GHCup, GHC, and Cabal
-        ghcup_cmd = (
-            "curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | "
-            "BOOTSTRAP_HASKELL_NONINTERACTIVE=1 "
-            f"BOOTSTRAP_HASKELL_GHC_VERSION={ghc_version} "
-            f"BOOTSTRAP_HASKELL_CABAL_VERSION={cabal_version} "
-            "BOOTSTRAP_HASKELL_INSTALL_STACK=1 "
-            "sh"
-        )
-        _run_command(ghcup_cmd, shell=True)
-        # Add to PATH for immediate use
-        os.environ['PATH'] = f"{os.environ['HOME']}/.ghcup/bin:{os.environ['PATH']}"
-        print("Haskell installed.")
-
 def setup_ocaml(version="5.4.1", opam_version="2.5.1"):
     """Installs the OCaml toolchain (OPAM and compiler) if missing, and loads opam env."""
 

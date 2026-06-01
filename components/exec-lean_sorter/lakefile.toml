@@ -1,7 +1,6 @@
 name = "SortBench"
-version = "0.2.0"
+version = "0.3.0"
 defaultTargets = ["sorter_lean"]
-
 
 
 [[lean_exe]]
@@ -16,5 +15,5 @@ lflags = ["-static"]
 [[require]]
 name = "quicksort"
 git = "https://github.com/somombo/formalized-quicksort"
-rev = "84228a9687d72b5a823fdebfc91aacbb78f17408" #"dev_v4.28.0"
+rev = "f4257e6e666fe37d951e06b6e04da720e5691143" #"dev_v4.30.0"
 

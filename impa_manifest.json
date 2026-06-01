@@ -21,7 +21,10 @@
     },
     "csharp": {
       "type": "executor",
-      "command": "bin/Release/net9.0/linux-x64/publish/AlgoCSharpSorter",
+      "command": "dotnet",
+      "args": [
+        "bin/Release/net8.0/publish/AlgoCSharpSorter.dll"
+      ],
       "working_dir": "components/exec-csharp_sorter"
     },
     "deno": {
@@ -41,7 +44,15 @@
     },
     "java": {
       "type": "executor",
-      "command": "./sorter_java",
+      "command": "java",
+      "args": [
+        "-server",
+        "-XX:+UseParallelGC",
+        "-XX:+AlwaysPreTouch",
+        "-XX:+UseNUMA",
+        "-XX:-UseContainerSupport",
+        "Sorter"
+      ],
       "working_dir": "components/exec-java_sorter"
     },
     "lean": {

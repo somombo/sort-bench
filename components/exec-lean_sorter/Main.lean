@@ -5,20 +5,13 @@ import Quicksort.Partition.Dutch.Basic
 import Quicksort.Adapt
 import Batteries.Data.BinaryHeap
 
-import SortBench
-
-
-def parseTarget (arg : String) : Except String String := do
-  if arg.isEmpty then
-    throw "Invalid argument: No functions provided."
-
-  return arg
-
+@[noinline]
 def timeAx (ax : IO α) : IO (Nat × α)  := do
   let start ← IO.monoNanosNow
   let a ←  ax
   let stop ← IO.monoNanosNow
   let dur := stop - start
+  -- IO.eprintln s!"{a[0]?} {dur}"
   return (dur, a)
 
 
@@ -46,10 +39,10 @@ def timeSort (id funcName : String) (originalArray : Array UInt32) (out : IO.FS.
     time_and_print ((qs · (part := Partition.hoare.eager)) <$> pure originalArray)
   | "Somombo.qs.hoare.classic" =>
     time_and_print ((qs · (part := Partition.hoare.classic sorry sorry)) <$> pure originalArray)
-  | "Somombo.qs.hoare_adapt34" =>
-    time_and_print ((qs_adapt · (part := Partition.hoare) (M := 34)) <$> pure originalArray)
-  | "Somombo.qs.hoare.classic_adapt34" =>
-    time_and_print ((qs_adapt · (part := Partition.hoare.classic sorry sorry) (M := 34)) <$> pure originalArray)
+  | "Somombo.qs.hoare_adapt44" =>
+    time_and_print ((qs_adapt · (part := Partition.hoare) (M := 44)) <$> pure originalArray)
+  | "Somombo.qs.hoare.classic_adapt44" =>
+    time_and_print ((qs_adapt · (part := Partition.hoare.classic sorry sorry) (M := 44)) <$> pure originalArray)
 
 
 
@@ -64,10 +57,10 @@ def timeSort (id funcName : String) (originalArray : Array UInt32) (out : IO.FS.
     time_and_print ((qs · (part := Partition.bentleyMcIlroy.classic sorry sorry)) <$> pure originalArray)
   | "Somombo.qs.bentleyMcIlroy.eager" =>
     time_and_print ((qs · (part := Partition.bentleyMcIlroy.eager)) <$> pure originalArray)
-  | "Somombo.qs.bentleyMcIlroy_adapt34" =>
-    time_and_print ((qs_adapt · (part := Partition.bentleyMcIlroy) (M := 34)) <$> pure originalArray)
-  | "Somombo.qs.bentleyMcIlroy.classic_adapt34" =>
-    time_and_print ((qs_adapt · (part := Partition.bentleyMcIlroy.classic sorry sorry) (M := 34)) <$> pure originalArray)
+  | "Somombo.qs.bentleyMcIlroy_adapt44" =>
+    time_and_print ((qs_adapt · (part := Partition.bentleyMcIlroy) (M := 44)) <$> pure originalArray)
+  | "Somombo.qs.bentleyMcIlroy.classic_adapt44" =>
+    time_and_print ((qs_adapt · (part := Partition.bentleyMcIlroy.classic sorry sorry) (M := 44)) <$> pure originalArray)
 
 
   | "Somombo.qs.lomuto" =>
@@ -86,14 +79,14 @@ where
 
 
 def parseLine (line : String) : IO (String × Array UInt32) := do
-  let line := line.trim.splitOn "|"
+  let line := line.trimAscii.copy.splitOn "|"
 
   let id::data_str::_ := line | throw $ IO.userError s!"Error: Malformed line."
-  let ls := data_str.trim.splitOn ","
+  let ls := data_str.trimAscii.copy.splitOn ","
 
   let mut arr := Array.emptyWithCapacity ls.length
   for x in ls do
-    let x := x.trim
+    let x := x.trimAscii
     if x.isEmpty then continue
     if let some n := x.toNat? then
       arr := arr.push n.toUInt32
@@ -136,9 +129,9 @@ def processLines (target : String) : IO UInt32 := do
 
       let hasNewline := line.back == '\n'
       if hasNewline then
-        line := line.dropRight 1
+        line := line.dropEnd 1 |>.copy
         if line.back == '\r' then
-          line := line.dropRight 1
+          line := line.dropEnd 1 |>.copy
 
       lines := lines.push line
 
@@ -154,12 +147,10 @@ def processLines (target : String) : IO UInt32 := do
 def main (args : List String) : IO UInt32 := do
   match args with
   | [arg] =>
-    match parseTarget arg with
-    | .ok target =>
-      processLines target
-    | .error msg =>
-      IO.eprintln msg
+    if arg.isEmpty then
+      IO.eprintln "Invalid argument: No functions provided."
       return 1
+    processLines arg
   | _ =>
     IO.eprintln "Usage: sorter func1"
     return 1

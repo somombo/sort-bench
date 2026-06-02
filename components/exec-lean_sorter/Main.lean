@@ -1,11 +1,16 @@
 import Quicksort.Basic
-import Quicksort.Partition.Yaroslavskiy.Basic
 import Quicksort.Partition.BentleyMcIlroy.Basic
-import Quicksort.Partition.Dutch.Basic
-import Quicksort.Adapt
 import Batteries.Data.BinaryHeap
 
-@[noinline]
+import SortExperiments.PDQSort
+
+import SortExperiments.Adapt
+
+import SortExperiments.Partitioning.Dutch
+
+import SortExperiments.HeapSort
+
+-- @[noinline]
 def timeAx (ax : IO α) : IO (Nat × α)  := do
   let start ← IO.monoNanosNow
   let a ←  ax
@@ -14,7 +19,7 @@ def timeAx (ax : IO α) : IO (Nat × α)  := do
   -- IO.eprintln s!"{a[0]?} {dur}"
   return (dur, a)
 
-
+-- @[specialize]
 def timeSort (id funcName : String) (originalArray : Array UInt32) (out : IO.FS.Stream) : IO Unit := do
   match funcName with
   | "Array.qsort" =>
@@ -23,14 +28,27 @@ def timeSort (id funcName : String) (originalArray : Array UInt32) (out : IO.FS.
 
     let copy := originalArray.toList
     time_and_print (List.mergeSort <$> pure copy)
+
+  | "Array.mergeSort" =>
+    time_and_print (Array.mergeSort <$> pure originalArray)
+
   | "Array.insertionSort" =>
     time_and_print (Array.insertionSort <$> pure originalArray)
-  | "Vector.insertionSort" =>
-    let copy := originalArray.toVector
-    time_and_print (Vector.insertionSort <$> pure copy)
 
   | "Batteries.Array.heapSort" =>
     time_and_print ((Array.heapSort · (· < ·)) <$> pure originalArray)
+
+  | "Somombo.Vector.insertionSort" =>
+    let copy := originalArray.toVector
+    time_and_print (Vector.insertionSort <$> pure copy)
+
+  | "Somombo.Vector.heapSort" =>
+    let copy := originalArray.toVector
+
+    if h_valid_range : 0 < copy.size - 1 then
+      time_and_print ((Vector.heapSort  · (n := copy.size) (h_valid_range :=  h_valid_range) (h_bound := Nat.le.refl)) <$> pure copy)
+    else
+      throw $ IO.userError s!"Error: Invalid array size {originalArray.size} for target: '{funcName}'"
 
 
   | "Somombo.qs.hoare" =>
@@ -38,11 +56,11 @@ def timeSort (id funcName : String) (originalArray : Array UInt32) (out : IO.FS.
   | "Somombo.qs.hoare.eager" =>
     time_and_print ((qs · (part := Partition.hoare.eager)) <$> pure originalArray)
   | "Somombo.qs.hoare.classic" =>
-    time_and_print ((qs · (part := Partition.hoare.classic sorry sorry)) <$> pure originalArray)
+    time_and_print ((qs · (part := Partition.hoare.classic)) <$> pure originalArray)
   | "Somombo.qs.hoare_adapt44" =>
     time_and_print ((qs_adapt · (part := Partition.hoare) (M := 44)) <$> pure originalArray)
   | "Somombo.qs.hoare.classic_adapt44" =>
-    time_and_print ((qs_adapt · (part := Partition.hoare.classic sorry sorry) (M := 44)) <$> pure originalArray)
+    time_and_print ((qs_adapt · (part := Partition.hoare.classic) (M := 44)) <$> pure originalArray)
 
 
 
@@ -54,13 +72,13 @@ def timeSort (id funcName : String) (originalArray : Array UInt32) (out : IO.FS.
   | "Somombo.qs.bentleyMcIlroy" =>
     time_and_print ((qs · (part := Partition.bentleyMcIlroy)) <$> pure originalArray)
   | "Somombo.qs.bentleyMcIlroy.classic" =>
-    time_and_print ((qs · (part := Partition.bentleyMcIlroy.classic sorry sorry)) <$> pure originalArray)
+    time_and_print ((qs · (part := Partition.bentleyMcIlroy.classic)) <$> pure originalArray)
   | "Somombo.qs.bentleyMcIlroy.eager" =>
     time_and_print ((qs · (part := Partition.bentleyMcIlroy.eager)) <$> pure originalArray)
   | "Somombo.qs.bentleyMcIlroy_adapt44" =>
     time_and_print ((qs_adapt · (part := Partition.bentleyMcIlroy) (M := 44)) <$> pure originalArray)
   | "Somombo.qs.bentleyMcIlroy.classic_adapt44" =>
-    time_and_print ((qs_adapt · (part := Partition.bentleyMcIlroy.classic sorry sorry) (M := 44)) <$> pure originalArray)
+    time_and_print ((qs_adapt · (part := Partition.bentleyMcIlroy.classic) (M := 44)) <$> pure originalArray)
 
 
   | "Somombo.qs.lomuto" =>
@@ -68,10 +86,13 @@ def timeSort (id funcName : String) (originalArray : Array UInt32) (out : IO.FS.
 
 
 
+  | "Somombo.pdqsort" =>
+    time_and_print ((pdqsort · (M := 44)) <$> pure originalArray)
 
   | _ =>
     throw $ IO.userError s!"Error: Unknown function '{funcName}' requested."
 where
+  -- @[inline]
   time_and_print {α : Type} (ax : IO α) : IO Unit := do
     let ⟨dur_nanoseconds, _⟩ ← timeAx ax
     out.putStrLn s!"{dur_nanoseconds}|{id}"

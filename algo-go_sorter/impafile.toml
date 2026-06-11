@@ -1,0 +1,19 @@
+# A human-readable name
+name = "go_sorter"
+
+# This component is a "algorithm"
+type = "algorithm"
+
+# The language key for the orchestrator
+language = "golang"
+
+[build]
+# We use go build directive
+command = "bash"
+
+# Arguments for the build.
+args = ["build.sh"]
+
+[run]
+# The executable path relative to this file
+command = "sorter_go_exe"

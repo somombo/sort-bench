@@ -1,0 +1,10 @@
+/.lake
+**/*__delete/**/*
+# data/output/*
+# data/input/*
+/src/cpp/sorter_cpp
+/data/*
+__pycache__
+.ipynb_checkpoints
+orchestrator/target/**
+

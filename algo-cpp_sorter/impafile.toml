@@ -1,0 +1,24 @@
+name = "cpp_sorter"
+
+type = "algorithm"
+
+language = "cpp"
+
+[build]
+command = "c++"
+
+# Arguments for the build.
+args = [
+    "-DNDEBUG",
+    "-std=c++17",
+    "-O3",
+    "-Wall",
+    "-Wextra",
+    "sorter.cpp",
+    "-o",
+    "sorter_cpp_exe"
+]
+
+[run]
+# The executable path relative to this file
+command = "sorter_cpp_exe"

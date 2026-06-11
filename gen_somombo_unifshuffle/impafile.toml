@@ -1,0 +1,21 @@
+# A human-readable name for this component
+name = "somombo_unifshuffle"
+
+# The type, used by the builder to categorize
+# "generator" or "sorter"
+type = "generator"
+
+# Language, used for grouping
+language = "lean"
+
+[build]
+# The executable to run (assumes 'lake' is in PATH)
+command = "lake"
+# The arguments to pass to the command
+# We are building the 'data_generator' executable in release mode
+args = ["build", "data_generator", "-R"]
+
+[run]
+# The relative path to the final binary *from this file's directory*
+# Lake produces a predictable output path.
+command = ".lake/build/bin/data_generator"

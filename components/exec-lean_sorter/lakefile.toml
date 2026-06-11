@@ -17,3 +17,8 @@ name = "quicksort"
 git = "https://github.com/somombo/formalized-quicksort"
 rev = "dev"
 
+
+[[require]]
+name = "time-it"
+git = "https://github.com/somombo/time-it"
+rev = "main"

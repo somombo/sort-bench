@@ -1,5 +1,5 @@
 ---
-name: create-algorithm
+name: create-executor
 description: Generates a sorting algorithm component executable for the sort-bench pipeline.
 ---
 

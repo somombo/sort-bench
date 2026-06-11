@@ -1,0 +1,18 @@
+# A human-readable name
+name = "lean_sorter"
+
+# This component is a "algorithm"
+type = "algorithm"
+
+# The language key used by the orchestrator to find this executable
+language = "lean"
+
+[build]
+# Build command
+command = "lake"
+# Arguments to build just this executable
+args = ["build", "sorter_lean", "-R"]
+
+[run]
+# The executable path relative to this impafile.toml
+command = ".lake/build/bin/sorter_lean"

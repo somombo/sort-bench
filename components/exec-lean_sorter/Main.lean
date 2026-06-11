@@ -9,15 +9,10 @@ import SortExperiments.Adapt
 import SortExperiments.Partitioning.Dutch
 
 import SortExperiments.HeapSort
+import SortExperiments.QSortHoareMo3
 
--- @[noinline]
-def timeAx (ax : IO α) : IO (Nat × α)  := do
-  let start ← IO.monoNanosNow
-  let a ←  ax
-  let stop ← IO.monoNanosNow
-  let dur := stop - start
-  -- IO.eprintln s!"{a[0]?} {dur}"
-  return (dur, a)
+import TimeIt
+
 
 -- @[specialize]
 def timeSort (id funcName : String) (originalArray : Array UInt32) (out : IO.FS.Stream) : IO Unit := do
@@ -41,6 +36,8 @@ def timeSort (id funcName : String) (originalArray : Array UInt32) (out : IO.FS.
   | "Somombo.Vector.insertionSort" =>
     let copy := originalArray.toVector
     time_and_print (Vector.insertionSort <$> pure copy)
+  | "Somombo.Array.insertionSort_without_fuel" =>
+    time_and_print (Array.insertionSort_without_fuel <$> pure originalArray)
 
   | "Somombo.Vector.heapSort" =>
     let copy := originalArray.toVector
@@ -89,12 +86,17 @@ def timeSort (id funcName : String) (originalArray : Array UInt32) (out : IO.FS.
   | "Somombo.pdqsort" =>
     time_and_print ((pdqsort · (M := 44)) <$> pure originalArray)
 
+  | "Somombo.pdqsort2" =>
+    time_and_print ((pdqsort2 · (M := 44)) <$> pure originalArray)
+
+  | "Somombo.qsort_hoare_mo3" =>
+    time_and_print ((qsort_hoare_mo3 ·) <$> pure originalArray)
   | _ =>
     throw $ IO.userError s!"Error: Unknown function '{funcName}' requested."
 where
   -- @[inline]
   time_and_print {α : Type} (ax : IO α) : IO Unit := do
-    let ⟨dur_nanoseconds, _⟩ ← timeAx ax
+    let dur_nanoseconds := (← IO.timeAx ax).1.toNanoseconds.toInt
     out.putStrLn s!"{dur_nanoseconds}|{id}"
 
 

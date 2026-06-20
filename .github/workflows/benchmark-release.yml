@@ -1,0 +1,62 @@
+name: Continuous Benchmarking Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag prefix for manual runs"
+        required: false
+        default: "manual-benchmark-run"
+        type: string
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  run-and-release-benchmarks:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup uv environment
+        uses: astral-sh/setup-uv@v3
+
+      - name: Install dependencies
+        working-directory: lab
+        run: uv sync
+
+      - name: Install CI prerequisite dependencies
+        working-directory: lab
+        run: uv pip install nbconvert ipykernel
+
+      - name: Create data directory
+        run: mkdir -p data
+
+      - name: Execute notebooks
+        working-directory: lab
+        run: |
+          for notebook in *_study.ipynb; do
+            uv run jupyter nbconvert --execute --inplace "$notebook"
+          done
+
+      - name: Verify outputs
+        run: ls -la data/*.jsonl
+
+      - name: Resolve release tag
+        id: resolve_tag
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "tag=${{ inputs.release_tag }}-${{ github.run_id }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create Release and upload artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.resolve_tag.outputs.tag }}
+          files: data/*.jsonl

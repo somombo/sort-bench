@@ -29,7 +29,7 @@ def _run_command(command, check=True, shell=False, capture_output=False):
 #     print("--- Installing Python Dependencies ---")
 #     _run_command([sys.executable, "-m", "pip", "install", "-U", "pandas", "plotly", "ipywidgets", "tqdm"])
 
-def setup_lean(version="v4.24.0"):
+def setup_lean(version="v4.30.0"):
     """Installs the Lean toolchain (Elan/Lake) if missing."""
     print("--- Checking Lean Toolchain ---")
     try:

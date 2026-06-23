@@ -31,10 +31,14 @@ jobs:
 
       - name: Install CI prerequisite dependencies
         working-directory: lab
-        run: uv pip install nbconvert ipykernel
+        run: uv pip install nbconvert ipykernel duckdb
 
       - name: Create data directory
         run: mkdir -p data
+
+      - name: Test Execute Template notebook
+        working-directory: lab
+        run: uv run jupyter nbconvert --execute --inplace template.ipynb
 
       - name: Execute notebooks
         working-directory: lab
@@ -45,6 +49,15 @@ jobs:
 
       - name: Verify outputs
         run: ls -la data/*.jsonl
+
+      - name: Build web application
+        working-directory: web
+        run: npm run build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/dist
 
       - name: Resolve release tag
         id: resolve_tag
@@ -60,3 +73,18 @@ jobs:
         with:
           tag_name: ${{ steps.resolve_tag.outputs.tag }}
           files: data/*.jsonl
+
+  deploy-pages:
+    needs: run-and-release-benchmarks
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

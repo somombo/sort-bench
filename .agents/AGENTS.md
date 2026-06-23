@@ -11,5 +11,5 @@ Algorithms (`components/exec-*/`) and data generators (`components/gen_*/`) are 
 * **Idiomatic & Clean Code:** Write native-feeling code. Prioritize self-documenting names. Use standard docstrings.
 * **Comments:** Limit inline comments to non-obvious intent or complexity. Never explain basic syntax.
 * **Reviewability:** Prefer changes that are easy to review via git diff.
-* **Reference:** Refer to `lab/template_study.ipynb` when writing Python analysis scripts or interfacing with `impa`.
+* **Reference:** Refer to `lab/template.ipynb` when writing Python analysis scripts or interfacing with `impa`.
 * **Ignored Directories:** Do not use or modify anything in directories named `__delete` or `.ignore` unless explicitly directed to.

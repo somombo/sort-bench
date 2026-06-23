@@ -26,7 +26,7 @@ Do not guess or hallucinate component I/O interfaces. When asked to create new c
 * **Fairness:** Sorting benchmarks must strictly isolate the sorting function by excluding memory allocation, parsing, and standard I/O overhead from the measured time.
 * **Clean Code Practices:** Prioritize self-documenting variable and function names over inline comments. Use standard docstrings for public interfaces only. Limit inline comments to non-obvious intent or complexity. Never explain basic syntax.
 * **Idiomatic Language Features:** Use idiomatic language patterns where applicable. Write code that is safe and feels native to the target language.
-* **Reference Material:** When writing Python analysis scripts or interfacing with the orchestrator, refer to `lab/template_study.ipynb` for correct usage.
+* **Reference Material:** When writing Python analysis scripts or interfacing with the orchestrator, refer to `lab/template.ipynb` for correct usage.
 
 
 - Limit inline comments to non-obvious intent or complexity e.g. it should never never explain syntax via comments. 

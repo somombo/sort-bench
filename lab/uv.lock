@@ -239,8 +239,8 @@ wheels = [
 
 [[package]]
 name = "impalab-py"
-version = "0.1.0"
-source = { git = "https://github.com/somombo/impalab.git?subdirectory=python-sdk&rev=python-sdk#becd18aea0d515007fc74a154fa9ec1d3f2e00dd" }
+version = "0.2.1"
+source = { git = "https://github.com/somombo/impalab.git?subdirectory=python-sdk&rev=python-sdk#79d1995229af7920e214fdd79a53d02ccacfdc4c" }
 dependencies = [
     { name = "tqdm" },
 ]

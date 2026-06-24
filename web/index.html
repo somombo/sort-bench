@@ -2,41 +2,180 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Row Count</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>sort·bench — sorting benchmark explorer</title>
+    <meta
+      name="description"
+      content="Interactive explorer for the sort-bench cross-language sorting benchmark suite. Nanosecond-precise, reproducible, isolated timings across C, C++, C#, Go, Java, JavaScript, Lean, OCaml, Python, Rust and Zig."
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='10' width='2.5' height='5' rx='.6' fill='%234343c8'/%3E%3Crect x='5' y='6' width='2.5' height='9' rx='.6' fill='%234343c8'/%3E%3Crect x='9' y='3' width='2.5' height='12' rx='.6' fill='%234343c8'/%3E%3Crect x='13' y='1' width='2.5' height='14' rx='.6' fill='%234343c8'/%3E%3C/svg%3E"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/uplot@1.6.31/dist/uPlot.min.css"
+    />
+    <link rel="stylesheet" href="src/style.css" />
   </head>
   <body>
-    <script type="module">
-      import * as duckdb from 'https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.32.0/+esm'
+    <!-- Boot / loading overlay -->
+    <div id="boot" class="boot" aria-live="polite">
+      <div class="boot-mark" aria-hidden="true">
+        <span></span><span></span><span></span><span></span>
+      </div>
+      <p class="boot-title">sort·bench</p>
+      <p class="boot-status" id="boot-status">Initializing in-browser engine…</p>
+    </div>
 
-      const bundle = await duckdb.selectBundle(duckdb.getJsDelivrBundles())
+    <header class="masthead">
+      <div class="masthead-id">
+        <a class="wordmark" href="." aria-label="sort-bench home">
+          <svg class="wordmark-glyph" viewBox="0 0 16 16" aria-hidden="true">
+            <rect x="1" y="10" width="2.5" height="5" rx=".6" />
+            <rect x="5" y="6" width="2.5" height="9" rx=".6" />
+            <rect x="9" y="3" width="2.5" height="12" rx=".6" />
+            <rect x="13" y="1" width="2.5" height="14" rx=".6" />
+          </svg>
+          <span>sort<i>·</i>bench</span>
+        </a>
+        <p class="tagline">
+          Cross-language sorting benchmarks — isolated, reproducible, measured
+          to the nanosecond.
+        </p>
+      </div>
+      <dl class="corpus" id="corpus">
+        <div><dt>measurements</dt><dd data-stat="rows">—</dd></div>
+        <div><dt>studies</dt><dd data-stat="studies">—</dd></div>
+        <div><dt>languages</dt><dd data-stat="langs">—</dd></div>
+        <div><dt>algorithms</dt><dd data-stat="algos">—</dd></div>
+      </dl>
+    </header>
 
-      // Web Workers require a local Blob URL to load cross-origin scripts from a CDN
-      const workerBlob = new Blob([`importScripts("${bundle.mainWorker}");`], {
-        type: 'text/javascript',
-      })
-      const workerUrl = URL.createObjectURL(workerBlob)
+    <main class="app" id="app" hidden>
+      <aside class="controls">
+        <div class="field">
+          <label class="field-label" for="study">Study</label>
+          <div class="select-wrap">
+            <select id="study"></select>
+          </div>
+          <p class="field-hint" id="study-hint"></p>
+        </div>
 
-      const db = new duckdb.AsyncDuckDB(
-        new duckdb.ConsoleLogger(),
-        new Worker(workerUrl),
-      )
-      await db.instantiate(bundle.mainModule, bundle.pthreadWorker)
-      URL.revokeObjectURL(workerUrl)
+        <div class="field">
+          <span class="field-label">Experiment</span>
+          <div
+            class="exp-list"
+            id="experiments"
+            role="radiogroup"
+            aria-label="Experiment"
+          ></div>
+        </div>
 
-      const conn = await db.connect()
-      const parquetRes = await fetch('benchmark_data.parquet')
-      await db.registerFileBuffer(
-        'data.parquet',
-        new Uint8Array(await parquetRes.arrayBuffer()),
-      )
+        <div class="field">
+          <span class="field-label">View</span>
+          <div class="toggle-row">
+            <button
+              class="toggle"
+              id="t-xlog"
+              type="button"
+              aria-pressed="true"
+            >
+              Log&nbsp;x
+            </button>
+            <button
+              class="toggle"
+              id="t-ylog"
+              type="button"
+              aria-pressed="true"
+            >
+              Log&nbsp;y
+            </button>
+            <button
+              class="toggle"
+              id="t-norm"
+              type="button"
+              aria-pressed="false"
+            >
+              Normalize
+            </button>
+          </div>
+          <p class="field-hint" id="norm-hint">
+            Normalize divides duration by the swept axis — time spent per
+            element.
+          </p>
+        </div>
 
-      const result = await conn.query(
-        'SELECT count(*) as c FROM "data.parquet"',
-      )
-      document.body.innerText = result.toArray()[0].toJSON().c
+        <div class="field grow">
+          <div class="field-label-row">
+            <span class="field-label">Algorithms</span>
+            <div class="series-bulk">
+              <button type="button" data-bulk="all">all</button>
+              <span aria-hidden="true">/</span>
+              <button type="button" data-bulk="none">none</button>
+            </div>
+          </div>
+          <div class="series-list" id="series"></div>
+        </div>
 
-      await conn.close()
-      await db.terminate()
-    </script>
+        <details class="method">
+          <summary>How a curve is computed</summary>
+          <p>
+            For every generated array, the <b>minimum</b> time over repeated
+            runs is kept — stripping OS jitter, GC pauses and context switches.
+            Across the independent random arrays at each axis value, each point
+            is the <b>median</b> of those minima. Only the sort itself is timed;
+            I/O, parsing and allocation are excluded.
+          </p>
+        </details>
+      </aside>
+
+      <section class="stage">
+        <div class="stage-head">
+          <div class="stage-head-text">
+            <h1 class="stage-title" id="stage-title">—</h1>
+            <p class="stage-sub" id="stage-sub"></p>
+          </div>
+          <div class="stage-axis" id="stage-axis"></div>
+        </div>
+
+        <figure class="chart-frame">
+          <div id="chart" class="chart"></div>
+          <figcaption class="chart-empty" id="chart-empty" hidden>
+            No algorithms selected — pick one or more on the left.
+          </figcaption>
+        </figure>
+
+        <section
+          class="ranking"
+          id="ranking"
+          aria-label="Ranking at the largest axis value"
+        >
+          <div class="ranking-head">
+            <h2 id="ranking-title">Ranking</h2>
+            <p id="ranking-note"></p>
+          </div>
+          <ol class="ranking-list" id="ranking-list"></ol>
+        </section>
+      </section>
+    </main>
+
+    <footer class="colophon">
+      <p>
+        Data is a recent CI run of
+        <a href="https://github.com/somombo/impalab" rel="noreferrer"
+          >impalab</a
+        >-driven <code>sort-bench</code> studies. Every query runs locally in
+        your browser through DuckDB-WASM — nothing is uploaded.
+      </p>
+    </footer>
+
+    <script type="module" src="src/app.js"></script>
   </body>
 </html>

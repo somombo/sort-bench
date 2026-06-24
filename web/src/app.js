@@ -1,0 +1,360 @@
+// sort·bench explorer — application controller.
+import {
+  initDB,
+  corpusStats,
+  listStudies,
+  listExperiments,
+  listTasks,
+  trend,
+  classifyExperiment,
+} from './db.js'
+import { renderChart, destroyChart } from './chart.js'
+import { colorFor } from './palette.js'
+import {
+  fmtTime,
+  fmtRate,
+  fmtInt,
+  fmtIntShort,
+  axisInfo,
+} from './format.js'
+
+const $ = (id) => document.getElementById(id)
+
+const AXIS_ORDER = { cardinality: 0, multiplicity: 1, swaps: 2 }
+
+const state = {
+  study: null,
+  experiment: null,
+  experiments: [],
+  tasks: [], // [{ task_label, executor, alg, color }]
+  selected: new Set(),
+  xlog: true,
+  ylog: true,
+  normalize: false,
+  rows: [], // trend rows for current study+experiment
+  trendCache: new Map(),
+}
+
+const prettyStudy = (s) =>
+  s.replace(/_study$/, '').replace(/_/g, ' ').trim()
+
+const expNumber = (name) => {
+  const m = name.match(/Experiment\s+(\d+)/i)
+  return m ? Number(m[1]) : 99
+}
+
+// ----------------------------------------------------------------- boot
+async function main() {
+  const setStatus = (t) => ($('boot-status').textContent = t)
+  try {
+    await initDB(setStatus)
+    setStatus('Indexing studies…')
+
+    const [stats, studies] = await Promise.all([corpusStats(), listStudies()])
+    paintCorpus(stats)
+    buildStudySelect(studies)
+
+    // Lead with the cross-language head-to-head — the suite's headline view.
+    const opening =
+      studies.find((s) => s.study === 'fast_sort_study') ?? studies[0]
+    await selectStudy(opening.study)
+    wireControls()
+
+    $('app').hidden = false
+    requestAnimationFrame(() => $('boot').classList.add('done'))
+  } catch (err) {
+    console.error(err)
+    $('boot-status').innerHTML = `Failed to load: ${err.message}`
+    $('boot-status').style.color = 'var(--s8)'
+  }
+}
+
+function paintCorpus(s) {
+  document.querySelector('[data-stat="rows"]').textContent = fmtInt(s.rows)
+  document.querySelector('[data-stat="studies"]').textContent = s.studies
+  document.querySelector('[data-stat="langs"]').textContent = s.langs
+  document.querySelector('[data-stat="algos"]').textContent = s.algos
+}
+
+function buildStudySelect(studies) {
+  const sel = $('study')
+  sel.innerHTML = ''
+  for (const { study, n } of studies) {
+    const opt = document.createElement('option')
+    opt.value = study
+    opt.textContent = `${prettyStudy(study)}  ·  ${fmtIntShort(n)} pts`
+    sel.appendChild(opt)
+  }
+}
+
+// ----------------------------------------------------------------- study
+async function selectStudy(study) {
+  state.study = study
+  $('study').value = study
+
+  const [experiments, tasks] = await Promise.all([
+    listExperiments(study),
+    listTasks(study),
+  ])
+
+  experiments.sort(
+    (a, b) =>
+      AXIS_ORDER[a.axis] - AXIS_ORDER[b.axis] ||
+      Number(a.descending) - Number(b.descending) ||
+      expNumber(a.experiment) - expNumber(b.experiment),
+  )
+  state.experiments = experiments
+
+  state.tasks = tasks.map((t, i) => ({ ...t, color: colorFor(i) }))
+  state.selected = new Set(state.tasks.map((t) => t.task_label))
+
+  $('study-hint').textContent = `${tasks.length} algorithms across ${
+    new Set(tasks.map((t) => t.executor)).size
+  } runtimes · ${experiments.length} experiments`
+
+  buildExperimentList()
+  buildSeriesList()
+
+  state.experiment = experiments[0].experiment
+  await loadTrend()
+}
+
+function buildExperimentList() {
+  const wrap = $('experiments')
+  wrap.innerHTML = ''
+  for (const exp of state.experiments) {
+    const btn = document.createElement('button')
+    btn.type = 'button'
+    btn.className = 'exp-item'
+    btn.setAttribute('role', 'radio')
+    btn.dataset.exp = exp.experiment
+    btn.title = exp.experiment
+    btn.innerHTML = `
+      <span class="exp-tick" aria-hidden="true"></span>
+      <span class="exp-name">${axisInfo(exp.axis).label}</span>
+      <span class="exp-axis">${exp.descending ? 'desc' : 'asc'}</span>`
+    btn.addEventListener('click', () => {
+      if (state.experiment === exp.experiment) return
+      state.experiment = exp.experiment
+      syncExperimentList()
+      loadTrend()
+    })
+    wrap.appendChild(btn)
+  }
+}
+
+function syncExperimentList() {
+  for (const btn of $('experiments').children) {
+    btn.setAttribute(
+      'aria-checked',
+      String(btn.dataset.exp === state.experiment),
+    )
+  }
+}
+
+function buildSeriesList() {
+  const wrap = $('series')
+  wrap.innerHTML = ''
+  for (const t of state.tasks) {
+    const btn = document.createElement('button')
+    btn.type = 'button'
+    btn.className = 'series-item'
+    btn.style.setProperty('--c', t.color)
+    btn.dataset.task = t.task_label
+    btn.innerHTML = `
+      <span class="series-swatch" aria-hidden="true"></span>
+      <span class="series-meta">
+        <span class="series-lang">${t.executor}</span>
+        <span class="series-alg" title="${t.alg}">${t.alg}</span>
+      </span>`
+    btn.addEventListener('click', () => {
+      if (state.selected.has(t.task_label)) state.selected.delete(t.task_label)
+      else state.selected.add(t.task_label)
+      syncSeriesList()
+      draw()
+    })
+    wrap.appendChild(btn)
+  }
+  syncSeriesList()
+}
+
+function syncSeriesList() {
+  for (const btn of $('series').children) {
+    btn.setAttribute(
+      'aria-pressed',
+      String(state.selected.has(btn.dataset.task)),
+    )
+  }
+}
+
+// ----------------------------------------------------------------- data
+async function loadTrend() {
+  syncExperimentList()
+  const key = `${state.study}::${state.experiment}`
+  let rows = state.trendCache.get(key)
+  if (!rows) {
+    rows = await trend(state.study, state.experiment)
+    state.trendCache.set(key, rows)
+  }
+  state.rows = rows
+
+  // x-log only makes sense for strictly-positive axes
+  const minX = Math.min(...rows.map((r) => r.x))
+  const xlogBtn = $('t-xlog')
+  if (minX <= 0) {
+    state.xlog = false
+    xlogBtn.disabled = true
+    xlogBtn.setAttribute('aria-pressed', 'false')
+  } else {
+    xlogBtn.disabled = false
+  }
+
+  draw()
+}
+
+// ----------------------------------------------------------------- draw
+function draw() {
+  const meta = classifyExperiment(state.experiment)
+  const info = axisInfo(meta.axis)
+  paintStageHead(meta, info)
+
+  const selected = state.tasks.filter((t) => state.selected.has(t.task_label))
+  const empty = $('chart-empty')
+  empty.hidden = selected.length > 0
+
+  // pivot rows -> shared xs + per-series aligned values
+  const xs = [...new Set(state.rows.map((r) => r.x))].sort((a, b) => a - b)
+  const byTask = new Map()
+  for (const r of state.rows) {
+    if (!byTask.has(r.task_label)) byTask.set(r.task_label, new Map())
+    byTask.get(r.task_label).set(r.x, r.y)
+  }
+
+  const series = selected.map((t) => {
+    const pts = byTask.get(t.task_label) ?? new Map()
+    const ys = xs.map((x) => {
+      const y = pts.get(x)
+      if (y == null) return null
+      return state.normalize ? y / x : y
+    })
+    return { label: `${t.executor} · ${t.alg}`, color: t.color, ys }
+  })
+
+  destroyChart()
+  if (selected.length && xs.length) {
+    renderChart($('chart'), {
+      xs,
+      series,
+      xlog: state.xlog,
+      ylog: state.ylog,
+      xLabel: `${info.label} (${info.unit})`,
+      yLabel: state.normalize ? 'ns per element' : 'Duration',
+      yFmt: state.normalize ? fmtRate : fmtTime,
+    })
+  }
+
+  paintRanking(meta, info, xs, byTask, selected)
+}
+
+function paintStageHead(meta, info) {
+  $('stage-title').textContent = `${prettyStudy(state.study)} — ${
+    info.label
+  }${meta.descending ? ' (descending)' : ''}`
+
+  const bits = [info.blurb]
+  if (meta.fixedSize)
+    bits.push(`Total size held at ${fmtInt(meta.fixedSize)} elements.`)
+  if (meta.descending)
+    bits.push('Inputs start in reverse-sorted order.')
+  $('stage-sub').textContent = bits.join(' ')
+
+  const xs = state.rows.map((r) => r.x)
+  const minX = Math.min(...xs)
+  const maxX = Math.max(...xs)
+  const runs = state.rows.length
+    ? Math.max(...state.rows.map((r) => r.runs))
+    : 0
+  $('stage-axis').innerHTML = `
+    swept <b>${fmtIntShort(minX)} → ${fmtIntShort(maxX)}</b><br />
+    median of ${runs} arrays · min over reps`
+}
+
+function paintRanking(meta, info, xs, byTask, selected) {
+  const list = $('ranking-list')
+  list.innerHTML = ''
+  if (!selected.length || !xs.length) {
+    $('ranking-note').textContent = ''
+    return
+  }
+  const maxX = xs[xs.length - 1]
+
+  // rank by absolute median duration at the largest axis value
+  const ranked = selected
+    .map((t) => ({ t, y: byTask.get(t.task_label)?.get(maxX) ?? null }))
+    .filter((d) => d.y != null)
+    .sort((a, b) => a.y - b.y)
+
+  if (!ranked.length) {
+    $('ranking-note').textContent = 'no data at peak axis value'
+    return
+  }
+  const fastest = ranked[0].y
+  const slowest = ranked[ranked.length - 1].y
+
+  $('ranking-title').textContent = `Fastest at ${info.label.toLowerCase()} = ${fmtInt(
+    maxX,
+  )}`
+  $('ranking-note').textContent = `${ranked.length} algorithms · median ns`
+
+  ranked.forEach((d, i) => {
+    const li = document.createElement('li')
+    li.className = 'rank-row'
+    li.style.setProperty('--c', d.t.color)
+    li.style.setProperty('--w', String(d.y / slowest))
+    const rel = d.y / fastest
+    li.innerHTML = `
+      <span class="rank-pos">${i + 1}</span>
+      <span class="rank-name">
+        <span class="rank-dot" aria-hidden="true"></span>
+        <span class="rank-label"><span class="rank-lang">${
+          d.t.executor
+        }</span> ${d.t.alg}</span>
+      </span>
+      <span class="rank-bar-track"><span class="rank-bar"></span></span>
+      <span class="rank-val">${fmtTime(d.y)}
+        <span class="rank-rel">${rel < 1.05 ? 'fastest' : rel.toFixed(rel < 10 ? 1 : 0) + '×'}</span>
+      </span>`
+    list.appendChild(li)
+  })
+}
+
+// ----------------------------------------------------------------- controls
+function wireControls() {
+  $('study').addEventListener('change', (e) => selectStudy(e.target.value))
+
+  const toggle = (id, key) => {
+    const btn = $(id)
+    btn.addEventListener('click', () => {
+      if (btn.disabled) return
+      state[key] = !state[key]
+      btn.setAttribute('aria-pressed', String(state[key]))
+      draw()
+    })
+  }
+  toggle('t-xlog', 'xlog')
+  toggle('t-ylog', 'ylog')
+  toggle('t-norm', 'normalize')
+
+  for (const b of document.querySelectorAll('.series-bulk button')) {
+    b.addEventListener('click', () => {
+      state.selected =
+        b.dataset.bulk === 'all'
+          ? new Set(state.tasks.map((t) => t.task_label))
+          : new Set()
+      syncSeriesList()
+      draw()
+    })
+  }
+}
+
+main()

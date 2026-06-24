@@ -6,9 +6,11 @@ import {
   listExperiments,
   listTasks,
   trend,
+  runDistribution,
   classifyExperiment,
 } from './db.js'
 import { renderChart, destroyChart } from './chart.js'
+import { renderDistribution } from './dist.js'
 import { colorFor } from './palette.js'
 import {
   fmtTime,
@@ -31,6 +33,7 @@ const state = {
   xlog: true,
   ylog: true,
   normalize: false,
+  spread: false, // per-point error bars on/off
   rows: [], // trend rows for current study+experiment
   trendCache: new Map(),
 }
@@ -222,22 +225,37 @@ function draw() {
   const empty = $('chart-empty')
   empty.hidden = selected.length > 0
 
-  // pivot rows -> shared xs + per-series aligned values
+  // pivot rows -> shared xs + per-series aligned values + spread summaries
   const xs = [...new Set(state.rows.map((r) => r.x))].sort((a, b) => a - b)
   const byTask = new Map()
   for (const r of state.rows) {
     if (!byTask.has(r.task_label)) byTask.set(r.task_label, new Map())
-    byTask.get(r.task_label).set(r.x, r.y)
+    byTask.get(r.task_label).set(r.x, r)
   }
+
+  const norm = (v, x) => (v == null ? null : state.normalize ? v / x : v)
 
   const series = selected.map((t) => {
     const pts = byTask.get(t.task_label) ?? new Map()
-    const ys = xs.map((x) => {
-      const y = pts.get(x)
-      if (y == null) return null
-      return state.normalize ? y / x : y
+    const ys = xs.map((x) => norm(pts.get(x)?.y, x))
+    const stats = xs.map((x) => {
+      const r = pts.get(x)
+      if (!r) return null
+      return {
+        lo: norm(r.lo, x),
+        q1: norm(r.q1, x),
+        med: norm(r.y, x),
+        q3: norm(r.q3, x),
+        hi: norm(r.hi, x),
+      }
     })
-    return { label: `${t.executor} · ${t.alg}`, color: t.color, ys }
+    return {
+      key: t.task_label,
+      label: `${t.executor} · ${t.alg}`,
+      color: t.color,
+      ys,
+      stats,
+    }
   })
 
   destroyChart()
@@ -247,9 +265,11 @@ function draw() {
       series,
       xlog: state.xlog,
       ylog: state.ylog,
+      spread: state.spread,
       xLabel: `${info.label} (${info.unit})`,
       yLabel: state.normalize ? 'ns per element' : 'Duration',
       yFmt: state.normalize ? fmtRate : fmtTime,
+      onPointClick: openDistribution,
     })
   }
 
@@ -290,7 +310,7 @@ function paintRanking(meta, info, xs, byTask, selected) {
 
   // rank by absolute median duration at the largest axis value
   const ranked = selected
-    .map((t) => ({ t, y: byTask.get(t.task_label)?.get(maxX) ?? null }))
+    .map((t) => ({ t, y: byTask.get(t.task_label)?.get(maxX)?.y ?? null }))
     .filter((d) => d.y != null)
     .sort((a, b) => a.y - b.y)
 
@@ -344,6 +364,7 @@ function wireControls() {
   toggle('t-xlog', 'xlog')
   toggle('t-ylog', 'ylog')
   toggle('t-norm', 'normalize')
+  toggle('t-spread', 'spread')
 
   for (const b of document.querySelectorAll('.series-bulk button')) {
     b.addEventListener('click', () => {
@@ -354,6 +375,34 @@ function wireControls() {
       syncSeriesList()
       draw()
     })
+  }
+
+  // distribution drawer: backdrop click closes
+  const dlg = $('dist')
+  dlg.addEventListener('click', (e) => {
+    if (e.target === dlg) dlg.close()
+  })
+}
+
+// ----------------------------------------------------------------- drawer
+async function openDistribution({ key, label, color, x }) {
+  const dlg = $('dist')
+  const meta = state.tasks.find((t) => t.task_label === key)
+  dlg.dataset.loading = '1'
+  dlg.showModal()
+  try {
+    const rows = await runDistribution(state.study, state.experiment, key, x)
+    renderDistribution(dlg, {
+      label,
+      executor: meta?.executor ?? '',
+      color,
+      axisLabel: axisInfo(classifyExperiment(state.experiment).axis).label,
+      x,
+      rows,
+    })
+  } catch (err) {
+    console.error(err)
+    dlg.close()
   }
 }
 

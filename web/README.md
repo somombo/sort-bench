@@ -40,11 +40,15 @@ and uPlot from a CDN.
 - **Experiment** — each sweeps one axis: **cardinality** (array size),
   **multiplicity** (duplicate density at fixed size), or **swaps**
   (pre-sortedness at fixed size), in ascending or descending base order.
-- **View** — log/linear on either axis, and *normalize* to show time per element.
+- **View** — log/linear on either axis, *normalize* to show time per element,
+  and *spread* to overlay per-point **error bars** (min · median · max, built
+  from the per-run minima behind each median).
 - **Algorithms** — toggle any subset of the language/algorithm series.
 
 The trend chart gives a crosshair readout of every series; the ranking panel
-orders algorithms by median duration at the largest axis value.
+orders algorithms by median duration at the largest axis value. **Click any
+point** to open a drawer showing the full distribution of its individual runs —
+a box-whisker plus every random-array result and the five-number summary.
 
 ## Source layout
 

@@ -430,7 +430,8 @@ code {
 
 /* toggles */
 .toggle-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 0.4rem;
 }
 .toggle {
@@ -817,6 +818,179 @@ code {
   font-family: var(--mono);
   font-size: 0.68rem;
   color: var(--ink-3);
+}
+
+/* ============================================================
+   Distribution drawer (native <dialog>)
+   ============================================================ */
+.dist {
+  width: min(620px, calc(100vw - 2rem));
+  padding: 0;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-2);
+  color: var(--ink);
+}
+.dist::backdrop {
+  background: oklch(0.3 0.03 264 / 0.32);
+  backdrop-filter: blur(2px);
+}
+.dist[open] {
+  animation: distpop var(--dur-2) var(--ease);
+}
+@keyframes distpop {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+}
+.dist-card {
+  padding: 1.3rem 1.4rem 1.45rem;
+}
+.dist-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.dist-id {
+  display: flex;
+  gap: 0.65rem;
+  min-width: 0;
+}
+.dist-dotmark {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  margin-top: 0.35rem;
+  border-radius: 3px;
+  background: var(--c);
+}
+.dist-lang {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.dist-title {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 1.1rem;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  word-break: break-word;
+}
+.dist-close {
+  flex: none;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+  background: var(--surface-2);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  transition: all var(--dur-1) var(--ease);
+}
+.dist-close:hover {
+  color: var(--ink);
+  border-color: var(--accent-line);
+}
+.dist-context {
+  margin-top: 0.85rem;
+  font-size: 0.88rem;
+  color: var(--ink-2);
+}
+.dist-context b {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.dist-svg {
+  width: 100%;
+  height: auto;
+  margin: 0.5rem 0 0.2rem;
+}
+.dist-axis {
+  stroke: var(--line-2);
+  stroke-width: 1;
+}
+.dist-tick {
+  stroke: var(--line-2);
+  stroke-width: 1;
+}
+.dist-ticklabel {
+  fill: var(--ink-3);
+  font-family: var(--mono);
+  font-size: 10px;
+  text-anchor: middle;
+}
+.dist-whisker {
+  stroke: var(--c);
+  stroke-width: 1.5;
+  opacity: 0.55;
+}
+.dist-box {
+  fill: var(--c);
+  fill-opacity: 0.14;
+  stroke: var(--c);
+  stroke-width: 1.5;
+  stroke-opacity: 0.8;
+}
+.dist-median {
+  stroke: var(--c);
+  stroke-width: 2.5;
+}
+.dist-dot {
+  fill: var(--c);
+  fill-opacity: 0.5;
+  stroke: var(--surface);
+  stroke-width: 0.75;
+}
+.dist-stats {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.5rem;
+  margin: 0.9rem 0 0;
+  padding: 0.8rem 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.dist-stats div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.dist-stats dt {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.dist-stats dd {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.dist-foot {
+  margin-top: 0.85rem;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+.dist-foot b {
+  color: var(--ink-2);
+  font-weight: 600;
+}
+@media (max-width: 520px) {
+  .dist-stats {
+    grid-template-columns: repeat(4, 1fr);
+    row-gap: 0.7rem;
+  }
 }
 
 /* ============================================================

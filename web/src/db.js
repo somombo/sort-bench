@@ -98,20 +98,23 @@ export async function listTasks(study) {
   return rows
 }
 
+// a null swaps count means "maximal" — the full array size
+const AXIS_EXPR = {
+  cardinality: 'gen_meta.cardinality',
+  multiplicity: 'gen_meta.multiplicity',
+  swaps: 'coalesce(gen_meta.swaps, gen_meta.cardinality * gen_meta.multiplicity)',
+}
+
 /**
  * The core trend pipeline, faithful to the lab's methodology:
  *   1. min over repetitions  (per generated array × algorithm)
  *   2. median over the independent random arrays at each axis value
+ * Alongside the median, the spread of the per-array minima is summarised as a
+ * five-number (min / Q1 / median / Q3 / max) so the chart can draw whiskers.
  * Returns one row per (task_label, x).
  */
 export async function trend(study, experiment) {
-  const axis = classifyExperiment(experiment).axis
-  const xExpr = {
-    cardinality: 'gen_meta.cardinality',
-    multiplicity: 'gen_meta.multiplicity',
-    // a null swaps count means "maximal" — the full array size
-    swaps: 'coalesce(gen_meta.swaps, gen_meta.cardinality * gen_meta.multiplicity)',
-  }[axis]
+  const xExpr = AXIS_EXPR[classifyExperiment(experiment).axis]
 
   const rows = await query(`
     WITH base AS (
@@ -131,15 +134,53 @@ export async function trend(study, experiment) {
     SELECT
       task_label,
       x,
-      median(metric)::DOUBLE AS y,
-      count(*)               AS runs
+      count(*)                          AS runs,
+      median(metric)::DOUBLE            AS y,
+      min(metric)::DOUBLE               AS lo,
+      quantile_cont(metric, 0.25)::DOUBLE AS q1,
+      quantile_cont(metric, 0.75)::DOUBLE AS q3,
+      max(metric)::DOUBLE               AS hi
     FROM min_reps GROUP BY task_label, x ORDER BY x
   `)
   return rows.map((r) => ({
     task_label: r.task_label,
     x: num(r.x),
-    y: num(r.y),
     runs: num(r.runs),
+    y: num(r.y),
+    lo: num(r.lo),
+    q1: num(r.q1),
+    q3: num(r.q3),
+    hi: num(r.hi),
+  }))
+}
+
+/**
+ * The individual per-run results behind a single plotted point: one value per
+ * independent random array (each already reduced to its min over repetitions).
+ * This is the raw spread that the median/whiskers summarise.
+ */
+export async function runDistribution(study, experiment, taskLabel, xValue) {
+  const xExpr = AXIS_EXPR[classifyExperiment(experiment).axis]
+  const rows = await query(`
+    WITH base AS (
+      SELECT
+        gen_meta.id AS gid,
+        gen_meta.seed AS seed,
+        metric        AS metric
+      FROM data
+      WHERE attributes.study = ${sqlStr(study)}
+        AND attributes.experiment_name = ${sqlStr(experiment)}
+        AND executor || ' ' || array_to_string(args, ' ') = ${sqlStr(taskLabel)}
+        AND ${xExpr} = ${Number(xValue)}
+    )
+    SELECT gid, any_value(seed) AS seed, min(metric)::DOUBLE AS metric, count(*) AS reps
+    FROM base GROUP BY gid ORDER BY metric
+  `)
+  return rows.map((r) => ({
+    gid: r.gid,
+    seed: r.seed,
+    metric: num(r.metric),
+    reps: num(r.reps),
   }))
 }
 

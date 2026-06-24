@@ -5,6 +5,6 @@
     "dev": "npm run build && npx serve dist",
     "build": "npm run build_db && npm run build_app",
     "build_db": "uv --directory ../lab run --with duckdb python ../web/scripts/build_parquet.py",
-    "build_app": "cp index.html dist/"
+    "build_app": "mkdir -p dist && cp index.html dist/ && rm -rf dist/src && cp -r src dist/"
   }
 }

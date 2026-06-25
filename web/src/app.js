@@ -24,6 +24,16 @@ const $ = (id) => document.getElementById(id)
 
 const AXIS_ORDER = { cardinality: 0, multiplicity: 1, swaps: 2 }
 
+const STUDY_NOTEBOOKS = {
+  fast_sort_study: 'faster_sort_study',
+  insertionSort_study: 'insertionSort_study',
+  javascript_runtime_sort_study: 'javascriptSort_study',
+  merge_heap_Sort_study: 'mergeheapSort_study',
+  qsort_study: 'qsort_study',
+  slower_sort_study: 'slower_study',
+  lean_experimental_study: 'somomboLean_study',
+}
+
 const state = {
   study: null,
   experiment: null,
@@ -137,6 +147,15 @@ async function selectStudy(study) {
   $('study-hint').textContent = `${tasks.length} algorithms across ${
     new Set(tasks.map((t) => t.executor)).size
   } runtimes · ${experiments.length} experiments`
+
+  const nb = STUDY_NOTEBOOKS[study]
+  const colabLink = $('colab-link')
+  if (nb) {
+    colabLink.href = `https://colab.research.google.com/github/somombo/sort-bench/blob/main/lab/${nb}.ipynb`
+    colabLink.hidden = false
+  } else {
+    colabLink.hidden = true
+  }
 
   buildExperimentList()
   buildSeriesList()

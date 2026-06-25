@@ -76,6 +76,14 @@ To run a benchmark programmatically, define an `Impa` study within a Jupyter not
 
 Check out `lab/qsort_study.ipynb` or `lab/faster_sort_study.ipynb` for concrete examples of how to define study parameters, execute the pipeline, and generate visualizations.
 
+### Running in Google Colab
+
+If you prefer to run the analysis without installing anything locally, you can execute the benchmarking lab directly in your browser using Google Colab. All Jupyter notebooks in the `lab/` directory include an "Open In Colab" badge.
+
+Here are a few quick links to get started:
+- **QSort Study:** [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/somombo/sort-bench/blob/main/lab/qsort_study.ipynb)
+- **Faster Sort Study:** [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/somombo/sort-bench/blob/main/lab/faster_sort_study.ipynb)
+
 ## Adding New Components
 
 Both generators and algorithms are self-contained executable projects. To integrate a new component into the pipeline, create a new directory inside `components/` and include an `impafile.toml` that defines how to build and run the executable.

@@ -428,6 +428,44 @@ code {
   color: var(--accent-ink);
 }
 
+/* per-array reduction segmented control */
+.reduce-toggle {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.7rem;
+  font-family: var(--mono);
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: all var(--dur-1) var(--ease);
+}
+.reduce-toggle:hover {
+  border-color: var(--accent-line);
+  color: var(--ink);
+}
+.reduce-active {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.reduce-alt {
+  font-size: 0.72rem;
+  color: var(--ink-3);
+}
+.reduce-toggle[aria-pressed='true'] {
+  color: oklch(1 0 0);
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: var(--shadow-1);
+}
+.reduce-toggle[aria-pressed='true'] .reduce-alt {
+  color: oklch(1 0 0 / 0.7);
+}
+
 /* toggles */
 .toggle-row {
   display: grid;

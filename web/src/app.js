@@ -34,6 +34,8 @@ const state = {
   ylog: true,
   normalize: false,
   spread: false, // per-point error bars on/off
+  warmups: 0, // reps discarded as warm-ups before the per-array min (0 = min over all)
+  maxReps: 1, // largest rep count in the corpus (Warm-up keeps the last rep)
   rows: [], // trend rows for current study+experiment
   trendCache: new Map(),
 }
@@ -46,6 +48,26 @@ const expNumber = (name) => {
   return m ? Number(m[1]) : 99
 }
 
+// Human label for the active per-array reduction, given warm-ups discarded.
+function reductionLabel() {
+  const w = state.warmups
+  const keep = state.maxReps - w
+  if (w <= 0) return 'min over reps'
+  if (keep <= 1) return 'warm · last rep'
+  return `min · last ${keep} reps`
+}
+
+// Reflect the per-array reduction mode into the toggle button + hint.
+function syncReduce() {
+  const warm = state.warmups > 0
+  $('reduce-toggle').setAttribute('aria-pressed', String(warm))
+  $('reduce-active').textContent = warm ? 'Warm-up' : 'Min'
+  $('reduce-alt').textContent = warm ? '→ Min' : '→ Warm-up'
+  $('warm-hint').textContent = warm
+    ? `Keeps only the last of the ${state.maxReps} reps, treating the earlier ones as warm-ups.`
+    : `Keeps the fastest of the ${state.maxReps} reps — jitter-free (the lab default).`
+}
+
 // ----------------------------------------------------------------- boot
 async function main() {
   const setStatus = (t) => ($('boot-status').textContent = t)
@@ -55,6 +77,7 @@ async function main() {
 
     const [stats, studies] = await Promise.all([corpusStats(), listStudies()])
     paintCorpus(stats)
+    state.maxReps = Math.max(1, stats.maxReps)
     buildStudySelect(studies)
 
     // Lead with the cross-language head-to-head — the suite's headline view.
@@ -193,10 +216,10 @@ function syncSeriesList() {
 // ----------------------------------------------------------------- data
 async function loadTrend() {
   syncExperimentList()
-  const key = `${state.study}::${state.experiment}`
+  const key = `${state.study}::${state.experiment}::w${state.warmups}`
   let rows = state.trendCache.get(key)
   if (!rows) {
-    rows = await trend(state.study, state.experiment)
+    rows = await trend(state.study, state.experiment, state.warmups)
     state.trendCache.set(key, rows)
   }
   state.rows = rows
@@ -296,7 +319,7 @@ function paintStageHead(meta, info) {
     : 0
   $('stage-axis').innerHTML = `
     swept <b>${fmtIntShort(minX)} → ${fmtIntShort(maxX)}</b><br />
-    median of ${runs} arrays · min over reps`
+    median of ${runs} arrays · ${reductionLabel()}`
 }
 
 function paintRanking(meta, info, xs, byTask, selected) {
@@ -366,6 +389,14 @@ function wireControls() {
   toggle('t-norm', 'normalize')
   toggle('t-spread', 'spread')
 
+  // per-array reduction: one button toggling Min (all reps) ⇄ Warm-up (last rep)
+  $('reduce-toggle').addEventListener('click', () => {
+    state.warmups = state.warmups > 0 ? 0 : state.maxReps - 1
+    syncReduce()
+    loadTrend() // reduction changes the SQL — re-query
+  })
+  syncReduce()
+
   for (const b of document.querySelectorAll('.series-bulk button')) {
     b.addEventListener('click', () => {
       state.selected =
@@ -391,7 +422,13 @@ async function openDistribution({ key, label, color, x }) {
   dlg.dataset.loading = '1'
   dlg.showModal()
   try {
-    const rows = await runDistribution(state.study, state.experiment, key, x)
+    const rows = await runDistribution(
+      state.study,
+      state.experiment,
+      key,
+      x,
+      state.warmups,
+    )
     renderDistribution(dlg, {
       label,
       executor: meta?.executor ?? '',
@@ -399,6 +436,7 @@ async function openDistribution({ key, label, color, x }) {
       axisLabel: axisInfo(classifyExperiment(state.experiment).axis).label,
       x,
       rows,
+      warmups: state.warmups,
     })
   } catch (err) {
     console.error(err)

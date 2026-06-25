@@ -79,6 +79,22 @@
         </div>
 
         <div class="field">
+          <span class="field-label">Per-array reduction</span>
+          <button
+            class="reduce-toggle"
+            id="reduce-toggle"
+            type="button"
+            aria-pressed="false"
+          >
+            <span class="reduce-active" id="reduce-active">Min</span>
+            <span class="reduce-alt" id="reduce-alt" aria-hidden="true"
+              >→ Warm-up</span
+            >
+          </button>
+          <p class="field-hint" id="warm-hint"></p>
+        </div>
+
+        <div class="field">
           <span class="field-label">View</span>
           <div class="toggle-row">
             <button
@@ -141,6 +157,12 @@
             Across the independent random arrays at each axis value, each point
             is the <b>median</b> of those minima. Only the sort itself is timed;
             I/O, parsing and allocation are excluded.
+          </p>
+          <p>
+            Switch <b>Per-array reduction</b> to <b>Warm-up</b> to keep only the
+            last repetition of each array instead of the minimum — emulating
+            warm-up benchmarking, where the final rep is the warmed-up
+            measurement.
           </p>
         </details>
       </aside>

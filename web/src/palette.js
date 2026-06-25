@@ -1,16 +1,17 @@
 // Categorical series palette — single source for canvas strokes and DOM swatches.
-// Tuned for a white ground: roughly constant lightness, well-separated hues.
+// Editorial register: muted, ink-on-paper chroma, well-separated hues. Tuned to
+// read as distinct fine lines on a warm near-white ground (Tufte/Distill-ish).
 export const SERIES_COLORS = [
-  'oklch(0.52 0.19 264)', // indigo
-  'oklch(0.62 0.18 32)', // coral
-  'oklch(0.55 0.11 188)', // teal
-  'oklch(0.66 0.15 72)', // amber
-  'oklch(0.55 0.20 330)', // magenta
-  'oklch(0.58 0.15 142)', // green
-  'oklch(0.56 0.16 232)', // sky
-  'oklch(0.52 0.19 300)', // violet
-  'oklch(0.56 0.15 16)', // brick
-  'oklch(0.50 0.09 220)', // steel
+  'oklch(0.47 0.13 252)', // ink-blue
+  'oklch(0.54 0.15 33)', // brick-red
+  'oklch(0.55 0.09 192)', // teal
+  'oklch(0.63 0.12 82)', // ochre
+  'oklch(0.49 0.14 322)', // plum
+  'oklch(0.55 0.11 148)', // green
+  'oklch(0.52 0.15 295)', // violet
+  'oklch(0.52 0.13 52)', // sienna
+  'oklch(0.46 0.06 222)', // steel
+  'oklch(0.58 0.10 358)', // rose
 ]
 
 export function colorFor(index) {

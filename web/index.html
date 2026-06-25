@@ -10,12 +10,12 @@
     />
     <link
       rel="icon"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='10' width='2.5' height='5' rx='.6' fill='%234343c8'/%3E%3Crect x='5' y='6' width='2.5' height='9' rx='.6' fill='%234343c8'/%3E%3Crect x='9' y='3' width='2.5' height='12' rx='.6' fill='%234343c8'/%3E%3Crect x='13' y='1' width='2.5' height='14' rx='.6' fill='%234343c8'/%3E%3C/svg%3E"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='2' y='2.5' width='6' height='2' rx='.9' fill='%239d3b30'/%3E%3Crect x='2' y='6' width='8.5' height='2' rx='.9' fill='%239d3b30'/%3E%3Crect x='2' y='9.5' width='11' height='2' rx='.9' fill='%239d3b30'/%3E%3Crect x='2' y='13' width='13.5' height='2' rx='.9' fill='%239d3b30'/%3E%3C/svg%3E"
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=JetBrains+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
     <link
@@ -38,10 +38,10 @@
       <div class="masthead-id">
         <a class="wordmark" href="." aria-label="sort-bench home">
           <svg class="wordmark-glyph" viewBox="0 0 16 16" aria-hidden="true">
-            <rect x="1" y="10" width="2.5" height="5" rx=".6" />
-            <rect x="5" y="6" width="2.5" height="9" rx=".6" />
-            <rect x="9" y="3" width="2.5" height="12" rx=".6" />
-            <rect x="13" y="1" width="2.5" height="14" rx=".6" />
+            <rect x="1.5" y="2" width="6" height="2.1" rx=".9" />
+            <rect x="1.5" y="5.7" width="8.6" height="2.1" rx=".9" />
+            <rect x="1.5" y="9.4" width="11.2" height="2.1" rx=".9" />
+            <rect x="1.5" y="13.1" width="13.8" height="2.1" rx=".9" />
           </svg>
           <span>sort<i>·</i>bench</span>
         </a>
@@ -177,10 +177,13 @@
         </div>
 
         <figure class="chart-frame">
-          <div id="chart" class="chart"></div>
-          <figcaption class="chart-empty" id="chart-empty" hidden>
-            No algorithms selected — pick one or more on the left.
-          </figcaption>
+          <div class="chart-plate">
+            <div id="chart" class="chart"></div>
+            <div class="chart-empty" id="chart-empty" hidden>
+              No algorithms selected — pick one or more from the list.
+            </div>
+          </div>
+          <figcaption class="fig-cap" id="chart-cap"></figcaption>
         </figure>
 
         <section

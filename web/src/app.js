@@ -320,6 +320,15 @@ function paintStageHead(meta, info) {
   $('stage-axis').innerHTML = `
     swept <b>${fmtIntShort(minX)} → ${fmtIntShort(maxX)}</b><br />
     median of ${runs} arrays · ${reductionLabel()}`
+
+  // editorial figure caption beneath the chart
+  const yName = state.normalize ? 'Time per element' : 'Sort duration'
+  const xName = info.label.toLowerCase()
+  const scaleTxt = `${state.ylog ? 'log' : 'linear'}–${state.xlog ? 'log' : 'linear'}`
+  $('chart-cap').textContent =
+    `Fig. 1 — ${yName} versus ${xName}, by language and algorithm. ` +
+    `${scaleTxt} axes; each point is the median of ${runs} independent random ` +
+    `arrays (${reductionLabel()})${state.spread ? '; bars show min–IQR–max spread' : ''}.`
 }
 
 function paintRanking(meta, info, xs, byTask, selected) {

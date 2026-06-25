@@ -47,7 +47,8 @@ export async function corpusStats() {
       count(*)                                                  AS rows,
       count(DISTINCT attributes.study)                          AS studies,
       count(DISTINCT executor)                                  AS langs,
-      count(DISTINCT executor || array_to_string(args, ' '))    AS algos
+      count(DISTINCT executor || array_to_string(args, ' '))    AS algos,
+      max(rep_index) + 1                                        AS maxReps
     FROM data
   `)
   return {
@@ -55,6 +56,7 @@ export async function corpusStats() {
     studies: num(row.studies),
     langs: num(row.langs),
     algos: num(row.algos),
+    maxReps: num(row.maxReps),
   }
 }
 
@@ -105,42 +107,69 @@ const AXIS_EXPR = {
   swaps: 'coalesce(gen_meta.swaps, gen_meta.cardinality * gen_meta.multiplicity)',
 }
 
-/**
- * The core trend pipeline, faithful to the lab's methodology:
- *   1. min over repetitions  (per generated array × algorithm)
- *   2. median over the independent random arrays at each axis value
- * Alongside the median, the spread of the per-array minima is summarised as a
- * five-number (min / Q1 / median / Q3 / max) so the chart can draw whiskers.
- * Returns one row per (task_label, x).
- */
-export async function trend(study, experiment) {
-  const xExpr = AXIS_EXPR[classifyExperiment(experiment).axis]
+// Sanitize the warm-up count to a non-negative integer (it is interpolated into
+// SQL, so it must never be anything but a number).
+const warmInt = (w) => Math.max(0, Math.floor(Number(w) || 0))
 
-  const rows = await query(`
-    WITH base AS (
+/**
+ * Per-array reduction over repetitions, robust to varying rep counts. For each
+ * array we keep the last `reps_n - warmups` repetitions (run order = rep_index,
+ * descending), but never fewer than one, then take the min of those — discarding
+ * the first `warmups` reps as warm-ups. `warmups = 0` is plain min-over-all-reps
+ * (the lab default). The clamp via a per-group window means a low-rep array can
+ * never lose all of its measurements.
+ */
+function perArrayCTE({ study, experiment, xExpr, warmups, extraCols = '' }) {
+  const w = warmInt(warmups)
+  return `
+    raw AS (
       SELECT
         executor || ' ' || array_to_string(args, ' ') AS task_label,
         gen_meta.id                                    AS gid,
         ${xExpr}                                       AS x,
-        metric                                         AS metric
+        rep_index, metric${extraCols ? ',\n        ' + extraCols : ''}
       FROM data
       WHERE attributes.study = ${sqlStr(study)}
         AND attributes.experiment_name = ${sqlStr(experiment)}
     ),
-    min_reps AS (
+    ranked AS (
+      SELECT *,
+        count(*)     OVER (PARTITION BY task_label, gid)                       AS reps_n,
+        row_number() OVER (PARTITION BY task_label, gid ORDER BY rep_index DESC) AS rn
+      FROM raw
+    )`
+}
+
+/**
+ * The core trend pipeline, faithful to the lab's methodology:
+ *   1. reduce repetitions  (per generated array × algorithm) — see perArrayCTE
+ *   2. median over the independent random arrays at each axis value
+ * Alongside the median, the spread of the per-array values is summarised as a
+ * five-number (min / Q1 / median / Q3 / max) so the chart can draw whiskers.
+ * Returns one row per (task_label, x).
+ */
+export async function trend(study, experiment, warmups = 0) {
+  const xExpr = AXIS_EXPR[classifyExperiment(experiment).axis]
+  const w = warmInt(warmups)
+
+  const rows = await query(`
+    WITH ${perArrayCTE({ study, experiment, xExpr, warmups })},
+    per_array AS (
       SELECT task_label, gid, any_value(x) AS x, min(metric) AS metric
-      FROM base GROUP BY task_label, gid
+      FROM ranked
+      WHERE rn <= greatest(1, reps_n - ${w})
+      GROUP BY task_label, gid
     )
     SELECT
       task_label,
       x,
-      count(*)                          AS runs,
-      median(metric)::DOUBLE            AS y,
-      min(metric)::DOUBLE               AS lo,
+      count(*)                            AS runs,
+      median(metric)::DOUBLE              AS y,
+      min(metric)::DOUBLE                 AS lo,
       quantile_cont(metric, 0.25)::DOUBLE AS q1,
       quantile_cont(metric, 0.75)::DOUBLE AS q3,
-      max(metric)::DOUBLE               AS hi
-    FROM min_reps GROUP BY task_label, x ORDER BY x
+      max(metric)::DOUBLE                 AS hi
+    FROM per_array GROUP BY task_label, x ORDER BY x
   `)
   return rows.map((r) => ({
     task_label: r.task_label,
@@ -156,31 +185,38 @@ export async function trend(study, experiment) {
 
 /**
  * The individual per-run results behind a single plotted point: one value per
- * independent random array (each already reduced to its min over repetitions).
- * This is the raw spread that the median/whiskers summarise.
+ * independent random array, each reduced over its (kept) repetitions exactly as
+ * the trend does. Also reports the total reps and how many were kept.
  */
-export async function runDistribution(study, experiment, taskLabel, xValue) {
+export async function runDistribution(study, experiment, taskLabel, xValue, warmups = 0) {
   const xExpr = AXIS_EXPR[classifyExperiment(experiment).axis]
+  const w = warmInt(warmups)
   const rows = await query(`
-    WITH base AS (
-      SELECT
-        gen_meta.id AS gid,
-        gen_meta.seed AS seed,
-        metric        AS metric
-      FROM data
-      WHERE attributes.study = ${sqlStr(study)}
-        AND attributes.experiment_name = ${sqlStr(experiment)}
-        AND executor || ' ' || array_to_string(args, ' ') = ${sqlStr(taskLabel)}
-        AND ${xExpr} = ${Number(xValue)}
-    )
-    SELECT gid, any_value(seed) AS seed, min(metric)::DOUBLE AS metric, count(*) AS reps
-    FROM base GROUP BY gid ORDER BY metric
+    WITH ${perArrayCTE({
+      study,
+      experiment,
+      xExpr,
+      warmups,
+      extraCols: 'gen_meta.seed AS seed',
+    })}
+    SELECT
+      gid,
+      any_value(seed)        AS seed,
+      any_value(reps_n)      AS reps,
+      count(*)               AS kept,
+      min(metric)::DOUBLE    AS metric
+    FROM ranked
+    WHERE task_label = ${sqlStr(taskLabel)}
+      AND x = ${Number(xValue)}
+      AND rn <= greatest(1, reps_n - ${w})
+    GROUP BY gid ORDER BY metric
   `)
   return rows.map((r) => ({
     gid: r.gid,
     seed: r.seed,
-    metric: num(r.metric),
     reps: num(r.reps),
+    kept: num(r.kept),
+    metric: num(r.metric),
   }))
 }
 

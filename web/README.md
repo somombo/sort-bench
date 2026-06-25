@@ -43,6 +43,10 @@ and uPlot from a CDN.
 - **View** — log/linear on either axis, *normalize* to show time per element,
   and *spread* to overlay per-point **error bars** (min · median · max, built
   from the per-run minima behind each median).
+- **Per-array reduction** — `Min` (the lab default: the fastest of an array's
+  reps, jitter-free) or `Warm-up` (only the last rep, treating the earlier reps
+  as warm-ups). Built on a per-group window, so it is robust to varying rep
+  counts.
 - **Algorithms** — toggle any subset of the language/algorithm series.
 
 The trend chart gives a crosshair readout of every series; the ranking panel

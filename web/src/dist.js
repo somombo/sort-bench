@@ -24,7 +24,7 @@ const PAD_R = 24
 const Y_C = 66
 
 export function renderDistribution(dialog, ctx) {
-  const { label, executor, color, axisLabel, x, rows } = ctx
+  const { label, executor, color, axisLabel, x, rows, warmups = 0 } = ctx
   const vals = rows.map((r) => r.metric).sort((a, b) => a - b)
   const n = vals.length
 
@@ -36,9 +36,21 @@ export function renderDistribution(dialog, ctx) {
   const iqr = q3 - q1
   const spreadPct = med ? ((hi - lo) / med) * 100 : 0
 
-  const repsMin = Math.min(...rows.map((r) => r.reps))
-  const repsMax = Math.max(...rows.map((r) => r.reps))
-  const repsTxt = repsMin === repsMax ? `${repsMin}` : `${repsMin}–${repsMax}`
+  const range = (sel) => {
+    const lo = Math.min(...rows.map(sel))
+    const hi = Math.max(...rows.map(sel))
+    return { hi, txt: lo === hi ? `${lo}` : `${lo}–${hi}` }
+  }
+  const reps = range((r) => r.reps)
+  const kept = range((r) => r.kept ?? r.reps)
+  const repsTxt = reps.txt
+  const keptTxt = kept.txt
+  const reduced =
+    warmups <= 0
+      ? 'minimum over reps'
+      : kept.hi <= 1
+        ? 'last (warm-up) rep'
+        : `min over its last ${keptTxt} reps (first ${warmups} discarded as warm-ups)`
 
   // pad domain so caps/dots stay inside the frame
   const span = hi - lo || Math.max(hi, 1)
@@ -101,7 +113,13 @@ export function renderDistribution(dialog, ctx) {
 
       <p class="dist-context">
         ${axisLabel} = <b>${fmtInt(x)}</b> · <b>${n}</b> independent random
-        ${n === 1 ? 'array' : 'arrays'} · ${repsTxt} reps each
+        ${n === 1 ? 'array' : 'arrays'} · ${repsTxt} reps each${
+          warmups > 0
+            ? kept.hi <= 1
+              ? ' · last rep only'
+              : ` · last ${keptTxt} kept`
+            : ''
+        }
       </p>
 
       <svg class="dist-svg" viewBox="0 0 ${VB_W} 132" role="img"
@@ -123,8 +141,8 @@ export function renderDistribution(dialog, ctx) {
       </dl>
 
       <p class="dist-foot">
-        Each dot is one random array, reduced to its <b>minimum over reps</b>.
-        The plotted point is the <b>median</b> of these; the box spans the
+        Each dot is one random array, reduced to its <b>${reduced}</b>. The
+        plotted point is the <b>median</b> of these; the box spans the
         inter-quartile range.
       </p>
     </form>`

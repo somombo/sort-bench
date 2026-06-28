@@ -3,6 +3,7 @@ import Quicksort.Partition.BentleyMcIlroy.Basic
 import Batteries.Data.BinaryHeap
 
 import SortExperiments.PDQSort
+import SortExperiments.PDQSort2
 
 import SortExperiments.Adapt
 

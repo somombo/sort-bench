@@ -2,4 +2,4 @@
 
 set -euo pipefail
 # set -v
-CGO_ENABLED=0 go build -ldflags="-s -w" -o sorter_go_exe main.go
+CGO_ENABLED=0 go build -buildvcs=false -ldflags="-s -w" -o sorter_go_exe .

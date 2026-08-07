@@ -23,8 +23,12 @@ def parse_results(results: List[Dict[str, Any]]) -> pd.DataFrame:
     if 'gen.id' in df_results:
         df_results[['datagen_index', 'run_index', 'data_hash']] = df_results['gen.id'].str.split('_', expand=True)
 
-    df_results['task_label'] = \
-        df_results['executor'].astype(str) + ' ' + df_results['args'].str.join(" ")
+    if 'args' in df_results:
+        df_results['task_label'] = \
+            df_results['executor'].astype(str) + ' ' + df_results['args'].str.join(" ")
+    else:
+        df_results['task_label'] = \
+            df_results['executor'].astype(str)
 
     columns=[
         'datagen_index', 
@@ -245,8 +249,12 @@ def parse_df_results(df_results: pd.DataFrame) -> pd.DataFrame:
     if 'gen.id' in df_results:
         df_results[['datagen_index', 'run_index', 'data_hash']] = df_results['gen.id'].str.split('_', expand=True)
 
-    df_results['task_label'] = \
-        df_results['executor'].astype(str) + ' ' + df_results['args'].str.join(" ")
+    if 'args' in df_results:
+        df_results['task_label'] = \
+            df_results['executor'].astype(str) + ' ' + df_results['args'].str.join(" ")
+    else:
+        df_results['task_label'] = \
+            df_results['executor'].astype(str)
 
     columns=[
         'rep_index', 

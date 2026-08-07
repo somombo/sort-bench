@@ -1,0 +1,73 @@
+name = "lean_sorter"
+version = "0.4.0"
+defaultTargets = ["BentleyMcIlroyQSort", "HoareQSort", "KimemSort", "LeanCoreQSort"]
+
+
+# [[lean_exe]]
+# name = "sorter_lean"
+# root = "Main"
+# buildType = "release"
+# # Keep `-O3` only (no `-march=native`) so the Lean, C++, and Go executors all target the
+# # same baseline ISA — otherwise Lean would be host-tuned while C++/Go are not, skewing the
+# # cross-language comparison.
+# # cflags = ["-O3"]
+# # lflags = ["-static"]
+# # moreLeancArgs = [
+# #   "-falign-functions=64", 
+# #   "-falign-loops=32",
+# #   "-mllvm",
+# #   "-inline-threshold=300",
+# # ]
+# # release = true 
+
+
+[[lean_lib]]
+name = "Impalab"
+
+####################################################
+
+
+
+
+[[lean_exe]]
+name = "BentleyMcIlroyQSort"
+srcDir = "PR14653"
+buildType = "release"
+
+[[lean_exe]]
+name = "HoareQSort"
+srcDir = "PR14653"
+buildType = "release"
+
+####################################################
+
+[[lean_exe]]
+name = "KimemSort"
+srcDir = "PR14653"
+buildType = "release"
+
+
+[[lean_exe]]
+name = "LeanCoreQSort"
+srcDir = "PR14653"
+buildType = "release"
+
+
+
+
+
+
+#################################################################################################
+
+
+[[require]]
+name = "quicksort"
+git = "https://github.com/somombo/formalized-quicksort"
+rev = "dev"
+
+
+
+[[require]]
+name = "time-it"
+git = "https://github.com/somombo/time-it"
+rev = "main"

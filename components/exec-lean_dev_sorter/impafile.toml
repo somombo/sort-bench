@@ -1,0 +1,52 @@
+
+[[components]]
+name = "somombo.qsort_bentleyMcIlroy"
+type = "executor"
+
+[components.build]
+command = "lake"
+args = ["build", "BentleyMcIlroyQSort", "-R"]
+
+[components.run]
+command = ".lake/build/bin/BentleyMcIlroyQSort"
+
+
+[[components]]
+name = "somombo.qsort_hoare"
+type = "executor"
+
+[components.build]
+command = "lake"
+args = ["build", "HoareQSort", "-R"]
+
+[components.run]
+command = ".lake/build/bin/HoareQSort"
+
+
+###################
+
+[[components]]
+name = "kim-em.qsort_three_way"
+type = "executor"
+
+[components.build]
+command = "lake"
+args = ["build", "KimemSort", "-R"]
+
+[components.run]
+command = ".lake/build/bin/KimemSort"
+
+
+[[components]]
+name = "leancore.Array.qsort"
+type = "executor"
+
+[components.build]
+command = "lake"
+args = ["build", "LeanCoreQSort", "-R"]
+
+[components.run]
+command = ".lake/build/bin/LeanCoreQSort"
+
+
+

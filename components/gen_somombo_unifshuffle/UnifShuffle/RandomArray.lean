@@ -125,110 +125,182 @@ private def runAndPrint (name : String) (testAction : IO (Array Nat)) : IO Unit 
   IO.println s!"Example: {result}\n"
 
 
+/--
+info: --- Size 1 ---
+Example: #[0]
+-/
+#guard_msgs in
 #eval do
-  -- Example 1: Edge case with size 0.
-  runAndPrint "Size 0" $
-    Array.randNats 0 (nmm := 0)
+  (IO.setRandSeed 0 : IO Unit)
+  -- Example 1: Edge case with size 1.
+  runAndPrint "Size 1" $
+    Array.unifRandNats 1 (multiplicity := 1)
 
 /-
 (size := 10.000000) (nmm := 0.000000) (swaps_ratio := 0.000000), (reverse := false)
-(cardinality := 10) (multiplicity := 1) (swaps := 0) (descending := false)
+(cardinality := 10) (multiplicity := 1) (swaps := some 0) (descending := false)
 Example: #[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 -/
+/--
+info: --- Size 10, Sorted, 0% swaps ---
+Example: #[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+-/
+#guard_msgs in
 #eval do
+  (IO.setRandSeed 0 : IO Unit)
   -- Example 2: Perfectly sorted (default parameters).
   runAndPrint "Size 10, Sorted, 0% swaps" $
-    Array.randNats 10 (nmm := 0) (swaps_ratio := 0)
+    Array.unifRandNats 10 (multiplicity := 1) (swaps := some 0)
 /-
 (size := 10.000000) (nmm := 0.000000) (swaps_ratio := 0.000000), (reverse := true)
-(cardinality := 10) (multiplicity := 1) (swaps := 0) (descending := true)
+(cardinality := 10) (multiplicity := 1) (swaps := some 0) (descending := true)
 Example: #[9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
 -/
+/--
+info: --- Size 10, Reversed, 0% swaps ---
+Example: #[9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
+-/
+#guard_msgs in
 #eval do
+  (IO.setRandSeed 0 : IO Unit)
   -- Example 3: Perfectly reverse-sorted.
   runAndPrint "Size 10, Reversed, 0% swaps" $
-    Array.randNats 10 (nmm := 0) (swaps_ratio := 0) (reverse := true)
+    Array.unifRandNats 10 (multiplicity := 1) (swaps := some 0) (descending := true)
 
 /-
 (size := 10.000000) (nmm := 0.000000) (swaps_ratio := 0.200000), (reverse := false)
-(cardinality := 10) (multiplicity := 1) (swaps := 2) (descending := false)
+(cardinality := 10) (multiplicity := 1) (swaps := some 2) (descending := false)
 Example: #[0, 5, 2, 3, 4, 1, 6, 7, 8, 9]
 -/
+/--
+info: --- Size 10, Sorted, 20% swaps (2 swaps) ---
+Example: #[0, 1, 2, 6, 7, 5, 3, 4, 8, 9]
+-/
+#guard_msgs in
 #eval do
+  (IO.setRandSeed 0 : IO Unit)
   -- Example 4: A few swaps on a sorted array.
   -- swap_ratio = 0.2 means ceil(10 * 0.2) = 2 swaps.
   runAndPrint "Size 10, Sorted, 20% swaps (2 swaps)" $
-    Array.randNats 10 (nmm := 0) (swaps_ratio := 0.2)
+    Array.unifRandNats 10 (multiplicity := 1) (swaps := some 2)
 
 /-
 (size := 12.000000) (nmm := 0.000000) (swaps_ratio := 0.166667), (reverse := false)
-(cardinality := 12) (multiplicity := 1) (swaps := 2) (descending := false)
+(cardinality := 12) (multiplicity := 1) (swaps := some 2) (descending := false)
 Example: #[9, 4, 2, 3, 1, 5, 6, 7, 8, 0, 10, 11]
 -/
+/--
+info: --- Size 12, Sorted, with ceil((12-1)/12)*2 = 2 swaps ---
+Example: #[0, 1, 2, 3, 4, 8, 6, 7, 5, 10, 9, 11]
+-/
+#guard_msgs in
 #eval do
+  (IO.setRandSeed 0 : IO Unit)
   -- Test 12 of uniques.
   runAndPrint "Size 12, Sorted, with ceil((12-1)/12)*2 = 2 swaps" $
-    Array.randNats 12 (nmm := 0) (swaps_ratio := 2.0/12.0) /- (reverse := false) -/
+    Array.unifRandNats 12 (multiplicity := 1) (swaps := some 2) /- (descending := false) -/
 
 /-
 (size := 10.000000) (nmm := 0.000000) (swaps_ratio := 0.200000), (reverse := true)
-(cardinality := 10) (multiplicity := 1) (swaps := 2) (descending := true)
+(cardinality := 10) (multiplicity := 1) (swaps := some 2) (descending := true)
 Example: #[1, 2, 7, 6, 5, 4, 3, 8, 9, 0]
 -/
+/--
+info: --- Size 10, Reversed, 20% swaps (2 swaps) ---
+Example: #[9, 8, 7, 3, 2, 4, 6, 5, 1, 0]
+-/
+#guard_msgs in
 #eval do
+  (IO.setRandSeed 0 : IO Unit)
   -- Example 5: A few swaps on a reverse-sorted array.
   runAndPrint "Size 10, Reversed, 20% swaps (2 swaps)" $
-    Array.randNats 10 (nmm := 0) (swaps_ratio := 0.2) (reverse := true)
+    Array.unifRandNats 10 (multiplicity := 1) (swaps := some 2) (descending := true)
 
 /-
 (size := 10.000000) (nmm := 0.000000) (swaps_ratio := 1.000000), (reverse := false)
-(cardinality := 10) (multiplicity := 1) (swaps := 9) (descending := false)
+(cardinality := 10) (multiplicity := 1) (swaps := some 9) (descending := false)
 Example: #[4, 1, 2, 5, 0, 8, 3, 6, 7, 9]
 -/
+/--
+info: --- Size 10, Sorted, 100% swaps (10 swaps) ---
+Example: #[3, 6, 9, 8, 0, 7, 5, 4, 2, 1]
+-/
+#guard_msgs in
 #eval do
+  (IO.setRandSeed 0 : IO Unit)
   -- Example 6: Heavily swapped, almost random.
-  -- swap_ratio = 1.0 means floor(10 * 1.0) = 10 swaps.
+  -- swap_ratio = 1.0 means 9 swaps.
   runAndPrint "Size 10, Sorted, 100% swaps (10 swaps)" $
-    Array.randNats 10 (nmm := 0) (swaps_ratio := 1.0)
+    Array.unifRandNats 10 (multiplicity := 1) (swaps := some 9)
 
 
 
 ---
 /-
 (size := 10.000000) (nmm := 0.050000) (swaps_ratio := 1.000000), (reverse := false)
-(cardinality := 10) (multiplicity := 1) (swaps := 9) (descending := false)
+(cardinality := 10) (multiplicity := 1) (swaps := some 9) (descending := false)
 Example: #[7, 4, 1, 0, 9, 8, 6, 3, 5, 2]
 -/
+/--
+info: --- Size 10, Low Duplicates (effectively a shuffle) ---
+Example: #[3, 6, 9, 8, 0, 7, 5, 4, 2, 1]
+-/
+#guard_msgs in
 #eval do
+  (IO.setRandSeed 0 : IO Unit)
   runAndPrint "Size 10, Low Duplicates (effectively a shuffle)" $
-    Array.randNats 10 (nmm := 0.05)
+    Array.unifRandNats 10 (multiplicity := 1) (swaps := some 9)
 
 ----
 
 /-
 (size := 10.000000) (nmm := 1.200000) (swaps_ratio := 1.000000), (reverse := false)
-(cardinality := 1) (multiplicity := 10) (swaps := 9) (descending := false)
+(cardinality := 1) (multiplicity := 10) (swaps := some 9) (descending := false)
 Example: #[0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 -/
+/--
+info: --- Size 10, All Duplicates ---
+Example: #[0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+-/
+#guard_msgs in
 #eval do
+  (IO.setRandSeed 0 : IO Unit)
   runAndPrint "Size 10, All Duplicates" $
-    Array.randNats 10 (nmm := 1.2)
+    Array.unifRandNats 1 (multiplicity := 10) (swaps := some 9)
 
 /-
 (size := 20.000000) (nmm := 0.250000) (swaps_ratio := 1.000000), (reverse := false)
-(cardinality := 4) (multiplicity := 5) (swaps := 19) (descending := false)
+(cardinality := 4) (multiplicity := 5) (swaps := some 19) (descending := false)
 Example: #[3, 3, 1, 1, 3, 0, 2, 0, 1, 0, 1, 2, 2, 2, 1, 2, 3, 0, 0, 3]
 -/
+/--
+info: --- Size 20, Medium Duplicates (ratio = 0.25). max val be 3 ---
+Example: #[0, 2, 3, 3, 2, 0, 1, 1, 1, 1, 2, 3, 0, 3, 1, 3, 2, 0, 2, 0]
+-/
+#guard_msgs in
 #eval do
+  (IO.setRandSeed 0 : IO Unit)
   runAndPrint "Size 20, Medium Duplicates (ratio = 0.25). max val be 3" $
-    Array.randNats 20 (nmm := 0.25)
+    Array.unifRandNats 4 (multiplicity := 5) (swaps := some 19)
 
 
+/--
+info: --- Size 10, Sorted, 0% swaps ---
+Example: #[0, 1, 2, 3, 3, 3, 3, 3, 3, 4]
+-/
+#guard_msgs in
 #eval do
+  (IO.setRandSeed 0 : IO Unit)
   -- Example x: Perfectly sorted with duplicats.
   runAndPrint "Size 10, Sorted, 0% swaps" $
     Array.randNatsWithDominantVal 10 (duplicate_ratio := 0.6) (swaps_ratio := 0)
 
+/--
+info: --- Size 20, High Duplicates. 16 duplicates, 4 non-duplicates ---
+Example: #[3, 3, 3, 3, 3, 3, 1, 3, 2, 3, 3, 3, 3, 0, 3, 3, 4, 3, 3, 3]
+-/
+#guard_msgs in
 #eval do
+  (IO.setRandSeed 0 : IO Unit)
   runAndPrint "Size 20, High Duplicates. 16 duplicates, 4 non-duplicates" $
     Array.randNatsWithDominantVal 20 (duplicate_ratio := 0.8)

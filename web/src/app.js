@@ -19,10 +19,19 @@ import {
   fmtIntShort,
   axisInfo,
 } from './format.js'
+import {
+  chooseExperiment,
+  loadViewMemory,
+  readUrlView,
+  replaceUrlView,
+  resolveView,
+  saveViewMemory,
+} from './view-state.js'
 
 const $ = (id) => document.getElementById(id)
 
 const AXIS_ORDER = { cardinality: 0, multiplicity: 1, swaps: 2 }
+const viewMemory = loadViewMemory()
 
 const STUDY_NOTEBOOKS = {
   fast_sort_study: 'faster_sort_study',
@@ -42,7 +51,7 @@ const state = {
   tasks: [], // [{ task_label, executor, alg, color }]
   selected: new Set(),
   xlog: true,
-  ylog: true,
+  ylog: false,
   normalize: false,
   spread: false, // per-point error bars on/off
   warmups: 0, // reps discarded as warm-ups before the per-array min (0 = min over all)
@@ -57,6 +66,93 @@ const prettyStudy = (s) =>
 const expNumber = (name) => {
   const m = name.match(/Experiment\s+(\d+)/i)
   return m ? Number(m[1]) : 99
+}
+
+function rememberedStudy(study) {
+  return viewMemory.studies[study]
+}
+
+function selectedTaskLabels() {
+  const selected = state.tasks
+    .filter((task) => state.selected.has(task.task_label))
+    .map((task) => task.task_label)
+  return selected.length === state.tasks.length ? null : selected
+}
+
+function currentView() {
+  if (!state.study || !state.experiment) return null
+  return {
+    study: state.study,
+    experiment: state.experiment,
+    reduction: state.warmups > 0 ? 'warm' : 'min',
+    xlog: state.xlog,
+    ylog: state.ylog,
+    normalize: state.normalize,
+    spread: state.spread,
+    selected: selectedTaskLabels(),
+  }
+}
+
+function rememberCurrentView() {
+  const view = currentView()
+  if (!view) return null
+
+  const study = viewMemory.studies[view.study] ?? {
+    experiment: view.experiment,
+    experiments: {},
+  }
+  if (!study.experiments || typeof study.experiments !== 'object')
+    study.experiments = {}
+  study.experiment = view.experiment
+  study.experiments[view.experiment] = {
+    reduction: view.reduction,
+    xlog: view.xlog,
+    ylog: view.ylog,
+    normalize: view.normalize,
+    spread: view.spread,
+    selected: view.selected,
+  }
+  viewMemory.studies[view.study] = study
+  saveViewMemory(viewMemory)
+  return view
+}
+
+function commitViewState() {
+  const view = rememberCurrentView()
+  if (view) replaceUrlView(view)
+}
+
+function syncViewControls() {
+  for (const [id, key] of [
+    ['t-xlog', 'xlog'],
+    ['t-ylog', 'ylog'],
+    ['t-norm', 'normalize'],
+    ['t-spread', 'spread'],
+  ]) {
+    $(id).setAttribute('aria-pressed', String(state[key]))
+  }
+  syncReduce()
+}
+
+function applyExperimentView(experiment, sharedView = null) {
+  const remembered =
+    rememberedStudy(state.study)?.experiments?.[experiment.experiment] ?? {}
+  const view = resolveView(experiment, remembered, sharedView)
+
+  state.warmups = view.reduction === 'warm' ? state.maxReps - 1 : 0
+  state.xlog = view.xlog
+  state.ylog = view.ylog
+  state.normalize = view.normalize
+  state.spread = view.spread
+
+  const validTasks = new Set(state.tasks.map((task) => task.task_label))
+  state.selected =
+    view.selected === null
+      ? new Set(validTasks)
+      : new Set(view.selected.filter((task) => validTasks.has(task)))
+
+  syncViewControls()
+  syncSeriesList()
 }
 
 // Human label for the active per-array reduction, given warm-ups discarded.
@@ -91,10 +187,17 @@ async function main() {
     state.maxReps = Math.max(1, stats.maxReps)
     buildStudySelect(studies)
 
-    // Lead with the cross-language head-to-head — the suite's headline view.
+    const sharedView = readUrlView()
+    // Lead with the cross-language head-to-head unless a shared URL says which
+    // study to open.
     const opening =
-      studies.find((s) => s.study === 'fast_sort_study') ?? studies[0]
-    await selectStudy(opening.study)
+      studies.find((s) => s.study === sharedView?.study) ??
+      studies.find((s) => s.study === 'fast_sort_study') ??
+      studies[0]
+    await selectStudy(
+      opening.study,
+      sharedView?.study === opening.study ? sharedView : null,
+    )
     wireControls()
 
     $('app').hidden = false
@@ -125,8 +228,10 @@ function buildStudySelect(studies) {
 }
 
 // ----------------------------------------------------------------- study
-async function selectStudy(study) {
+async function selectStudy(study, sharedView = null) {
+  rememberCurrentView()
   state.study = study
+  state.experiment = null
   $('study').value = study
 
   const [experiments, tasks] = await Promise.all([
@@ -143,7 +248,18 @@ async function selectStudy(study) {
   state.experiments = experiments
 
   state.tasks = tasks.map((t, i) => ({ ...t, color: colorFor(i) }))
-  state.selected = new Set(state.tasks.map((t) => t.task_label))
+
+  const rememberedExperiment = sharedView
+    ? undefined
+    : rememberedStudy(study)?.experiment
+  const openingExperiment = chooseExperiment(
+    experiments,
+    sharedView?.experiment,
+    rememberedExperiment,
+  )
+  if (!openingExperiment) throw new Error(`Study ${study} has no experiments`)
+  state.experiment = openingExperiment.experiment
+  applyExperimentView(openingExperiment, sharedView)
 
   $('study-hint').textContent = `${tasks.length} algorithms across ${
     new Set(tasks.map((t) => t.executor)).size
@@ -161,7 +277,17 @@ async function selectStudy(study) {
   buildExperimentList()
   buildSeriesList()
 
-  state.experiment = experiments[0].experiment
+  commitViewState()
+  await loadTrend()
+}
+
+async function selectExperiment(experiment) {
+  if (state.experiment === experiment.experiment) return
+  rememberCurrentView()
+  state.experiment = experiment.experiment
+  applyExperimentView(experiment)
+  syncExperimentList()
+  commitViewState()
   await loadTrend()
 }
 
@@ -179,12 +305,7 @@ function buildExperimentList() {
       <span class="exp-tick" aria-hidden="true"></span>
       <span class="exp-name">${axisInfo(exp.axis).label}</span>
       <span class="exp-axis">${exp.descending ? 'desc' : 'asc'}</span>`
-    btn.addEventListener('click', () => {
-      if (state.experiment === exp.experiment) return
-      state.experiment = exp.experiment
-      syncExperimentList()
-      loadTrend()
-    })
+    btn.addEventListener('click', () => selectExperiment(exp))
     wrap.appendChild(btn)
   }
 }
@@ -316,6 +437,7 @@ function draw() {
   }
 
   paintRanking(meta, info, xs, byTask, selected)
+  commitViewState()
 }
 
 function paintStageHead(meta, info, rows, omittedNonPositive) {
@@ -426,6 +548,7 @@ function wireControls() {
   $('reduce-toggle').addEventListener('click', () => {
     state.warmups = state.warmups > 0 ? 0 : state.maxReps - 1
     syncReduce()
+    commitViewState()
     loadTrend() // reduction changes the SQL — re-query
   })
   syncReduce()

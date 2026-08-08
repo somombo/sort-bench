@@ -21,17 +21,17 @@ import {
 } from './format.js'
 import {
   chooseExperiment,
-  loadViewMemory,
   readUrlView,
   replaceUrlView,
   resolveView,
-  saveViewMemory,
 } from './view-state.js'
 
 const $ = (id) => document.getElementById(id)
 
 const AXIS_ORDER = { cardinality: 0, multiplicity: 1, swaps: 2 }
-const viewMemory = loadViewMemory()
+// Remember views only for this page lifetime. Reloading starts with URL state
+// or fresh defaults; nothing is persisted in browser storage.
+const viewMemory = { studies: {} }
 
 const STUDY_NOTEBOOKS = {
   fast_sort_study: 'faster_sort_study',
@@ -113,7 +113,6 @@ function rememberCurrentView() {
     selected: view.selected,
   }
   viewMemory.studies[view.study] = study
-  saveViewMemory(viewMemory)
   return view
 }
 

@@ -3,11 +3,9 @@ import assert from 'node:assert/strict'
 
 import {
   chooseExperiment,
-  loadViewMemory,
   readUrlView,
   replaceUrlView,
   resolveView,
-  saveViewMemory,
 } from '../src/view-state.js'
 
 test('defaults to Cardinality Ascending and its normalized log view', () => {
@@ -78,22 +76,4 @@ test('URL state round-trips an exact custom-series view', () => {
   assert.equal(new URL(replaced).searchParams.get('unrelated'), 'keep')
   assert.equal(new URL(replaced).hash, '#chart')
   assert.deepEqual(parsed, { ...original, study: original.study })
-})
-
-test('view memory survives storage and gracefully handles invalid data', () => {
-  const values = new Map()
-  const storage = {
-    getItem: (key) => values.get(key) ?? null,
-    setItem: (key, value) => values.set(key, value),
-  }
-  const memory = {
-    studies: {
-      example: { experiment: 'Cardinality Asc', experiments: {} },
-    },
-  }
-
-  saveViewMemory(memory, storage)
-  assert.deepEqual(loadViewMemory(storage), memory)
-  storage.setItem('sort-bench:view-state:v2', '{invalid')
-  assert.deepEqual(loadViewMemory(storage), { studies: {} })
 })

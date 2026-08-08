@@ -50,7 +50,7 @@ and uPlot from a CDN.
 - **Algorithms** — toggle any subset of the language/algorithm series.
 - **Remembered views** — each study reopens its most recently used experiment,
   and each experiment remembers its reduction, axes, normalization, spread, and
-  selected algorithms in local browser storage.
+  selected algorithms until the page is reloaded.
 - **Shareable URLs** — the active study, experiment, view controls, and selected
   algorithms are encoded in the URL so copying the address reproduces the same
   chart for another viewer.

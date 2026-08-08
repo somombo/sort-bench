@@ -1,5 +1,3 @@
-// v2 resets preferences captured while Log Y's fallback default was still on.
-const STORAGE_KEY = 'sort-bench:view-state:v2'
 const URL_KEYS = [
   'study',
   'experiment',
@@ -14,27 +12,6 @@ const URL_KEYS = [
 
 const isObject = (value) =>
   value !== null && typeof value === 'object' && !Array.isArray(value)
-
-export function loadViewMemory(storage) {
-  try {
-    const target = storage ?? globalThis.localStorage
-    const parsed = JSON.parse(target.getItem(STORAGE_KEY) ?? '{}')
-    return isObject(parsed) && isObject(parsed.studies)
-      ? parsed
-      : { studies: {} }
-  } catch {
-    return { studies: {} }
-  }
-}
-
-export function saveViewMemory(memory, storage) {
-  try {
-    const target = storage ?? globalThis.localStorage
-    target.setItem(STORAGE_KEY, JSON.stringify(memory))
-  } catch {
-    // Persistence is optional; the active view and URL still work without it.
-  }
-}
 
 function boolParam(params, name) {
   const value = params.get(name)

@@ -48,6 +48,12 @@ and uPlot from a CDN.
   as warm-ups). Built on a per-group window, so it is robust to varying rep
   counts.
 - **Algorithms** — toggle any subset of the language/algorithm series.
+- **Remembered views** — each study reopens its most recently used experiment,
+  and each experiment remembers its reduction, axes, normalization, spread, and
+  selected algorithms in local browser storage.
+- **Shareable URLs** — the active study, experiment, view controls, and selected
+  algorithms are encoded in the URL so copying the address reproduces the same
+  chart for another viewer.
 
 The trend chart gives a crosshair readout of every series; the ranking panel
 orders algorithms by median duration at the largest axis value. **Click any

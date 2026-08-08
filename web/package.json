@@ -1,10 +1,12 @@
 {
   "name": "sort-bench-web",
   "version": "0.0.1",
+  "type": "module",
   "scripts": {
     "dev": "npm run build && npx serve dist",
     "build": "npm run build_db && npm run build_app",
     "build_db": "uv --directory ../lab run --with duckdb python ../web/scripts/build_parquet.py",
-    "build_app": "mkdir -p dist/src && cp -f index.html dist/ && cp -f src/* dist/src/"
+    "build_app": "mkdir -p dist/src && cp -f index.html dist/ && cp -f src/* dist/src/",
+    "test": "node --test tests/*.test.js"
   }
 }

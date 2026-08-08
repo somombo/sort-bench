@@ -32,6 +32,7 @@ const STUDY_NOTEBOOKS = {
   qsort_study: 'qsort_study',
   slower_sort_study: 'slower_study',
   lean_experimental_study: 'somomboLean_study',
+  pr14653_study: 'pr14653_study',
 }
 
 const state = {
@@ -243,16 +244,8 @@ async function loadTrend() {
   }
   state.rows = rows
 
-  // x-log only makes sense for strictly-positive axes
-  const minX = Math.min(...rows.map((r) => r.x))
-  const xlogBtn = $('t-xlog')
-  if (minX <= 0) {
-    state.xlog = false
-    xlogBtn.disabled = true
-    xlogBtn.setAttribute('aria-pressed', 'false')
-  } else {
-    xlogBtn.disabled = false
-  }
+  // Log-x hides non-positive points rather than disabling the control.
+  $('t-xlog').disabled = false
 
   draw()
 }
@@ -261,16 +254,23 @@ async function loadTrend() {
 function draw() {
   const meta = classifyExperiment(state.experiment)
   const info = axisInfo(meta.axis)
-  paintStageHead(meta, info)
+  // A logarithmic x axis cannot represent zero or negative values. Keep those
+  // points available in linear view, but omit them from this rendering.
+  const rows = state.xlog ? state.rows.filter((r) => r.x > 0) : state.rows
+  const omittedNonPositive = rows.length !== state.rows.length
+  paintStageHead(meta, info, rows, omittedNonPositive)
 
   const selected = state.tasks.filter((t) => state.selected.has(t.task_label))
   const empty = $('chart-empty')
-  empty.hidden = selected.length > 0
+  empty.hidden = selected.length > 0 && rows.length > 0
+  empty.textContent = selected.length
+    ? 'No positive axis values are available for a logarithmic x scale.'
+    : 'No algorithms selected — pick one or more from the list.'
 
   // pivot rows -> shared xs + per-series aligned values + spread summaries
-  const xs = [...new Set(state.rows.map((r) => r.x))].sort((a, b) => a - b)
+  const xs = [...new Set(rows.map((r) => r.x))].sort((a, b) => a - b)
   const byTask = new Map()
-  for (const r of state.rows) {
+  for (const r of rows) {
     if (!byTask.has(r.task_label)) byTask.set(r.task_label, new Map())
     byTask.get(r.task_label).set(r.x, r)
   }
@@ -318,7 +318,7 @@ function draw() {
   paintRanking(meta, info, xs, byTask, selected)
 }
 
-function paintStageHead(meta, info) {
+function paintStageHead(meta, info, rows, omittedNonPositive) {
   $('stage-title').textContent = `${prettyStudy(state.study)} — ${
     info.label
   }${meta.descending ? ' (descending)' : ''}`
@@ -330,24 +330,29 @@ function paintStageHead(meta, info) {
     bits.push('Inputs start in reverse-sorted order.')
   $('stage-sub').textContent = bits.join(' ')
 
-  const xs = state.rows.map((r) => r.x)
-  const minX = Math.min(...xs)
-  const maxX = Math.max(...xs)
-  const runs = state.rows.length
-    ? Math.max(...state.rows.map((r) => r.runs))
+  const xs = rows.map((r) => r.x)
+  const sweep = xs.length
+    ? `${fmtIntShort(Math.min(...xs))} → ${fmtIntShort(Math.max(...xs))}`
+    : 'no positive values'
+  const runs = rows.length
+    ? Math.max(...rows.map((r) => r.runs))
     : 0
   $('stage-axis').innerHTML = `
-    swept <b>${fmtIntShort(minX)} → ${fmtIntShort(maxX)}</b><br />
+    swept <b>${sweep}</b><br />
     median of ${runs} arrays · ${reductionLabel()}`
 
   // editorial figure caption beneath the chart
   const yName = state.normalize ? 'Time per element' : 'Sort duration'
   const xName = info.label.toLowerCase()
   const scaleTxt = `${state.ylog ? 'log' : 'linear'}–${state.xlog ? 'log' : 'linear'}`
+  const qualifiers = []
+  if (omittedNonPositive)
+    qualifiers.push('non-positive x values omitted for log scale')
+  if (state.spread) qualifiers.push('bars show min–IQR–max spread')
   $('chart-cap').textContent =
     `Fig. 1 — ${yName} versus ${xName}, by language and algorithm. ` +
     `${scaleTxt} axes; each point is the median of ${runs} independent random ` +
-    `arrays (${reductionLabel()})${state.spread ? '; bars show min–IQR–max spread' : ''}.`
+    `arrays (${reductionLabel()})${qualifiers.length ? '; ' + qualifiers.join('; ') : ''}.`
 }
 
 function paintRanking(meta, info, xs, byTask, selected) {

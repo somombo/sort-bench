@@ -40,6 +40,12 @@ export async function query(sql) {
 const num = (v) => (typeof v === 'bigint' ? Number(v) : v)
 const sqlStr = (s) => `'${String(s).replace(/'/g, "''")}'`
 
+// `args` is absent for some impalab tasks. Keep the executor as their stable
+// task identity instead of letting SQL NULL propagation collapse every task.
+const taskLabelSql =
+  "coalesce(executor || ' ' || nullif(array_to_string(args, ' '), ''), executor)"
+const taskArgsSql = "coalesce(array_to_string(args, ' '), '')"
+
 /** Whole-corpus headline counts. */
 export async function corpusStats() {
   const [row] = await query(`
@@ -47,7 +53,7 @@ export async function corpusStats() {
       count(*)                                                  AS rows,
       count(DISTINCT attributes.study)                          AS studies,
       count(DISTINCT executor)                                  AS langs,
-      count(DISTINCT executor || array_to_string(args, ' '))    AS algos,
+      count(DISTINCT ${taskLabelSql})                            AS algos,
       max(rep_index) + 1                                        AS maxReps
     FROM data
   `)
@@ -91,9 +97,9 @@ export async function listExperiments(study) {
 export async function listTasks(study) {
   const rows = await query(`
     SELECT DISTINCT
-      executor || ' ' || array_to_string(args, ' ') AS task_label,
-      executor                                       AS executor,
-      array_to_string(args, ' ')                     AS alg
+      ${taskLabelSql} AS task_label,
+      executor        AS executor,
+      ${taskArgsSql}  AS alg
     FROM data WHERE attributes.study = ${sqlStr(study)}
     ORDER BY executor, alg
   `)
@@ -124,9 +130,9 @@ function perArrayCTE({ study, experiment, xExpr, warmups, extraCols = '' }) {
   return `
     raw AS (
       SELECT
-        executor || ' ' || array_to_string(args, ' ') AS task_label,
-        gen_meta.id                                    AS gid,
-        ${xExpr}                                       AS x,
+        ${taskLabelSql} AS task_label,
+        gen_meta.id     AS gid,
+        ${xExpr}        AS x,
         rep_index, metric${extraCols ? ',\n        ' + extraCols : ''}
       FROM data
       WHERE attributes.study = ${sqlStr(study)}

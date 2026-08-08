@@ -832,13 +832,18 @@ code {
 .chart-toolbar {
   min-height: 1.8rem;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: flex-end;
   gap: 0.65rem;
   padding-bottom: 0.35rem;
   font-family: var(--mono);
   font-size: 0.62rem;
   color: var(--ink-3);
+}
+.chart-toolbar-actions {
+  display: grid;
+  justify-items: end;
+  gap: 0.2rem;
 }
 .chart-toolbar button {
   padding: 0.28rem 0.5rem;
@@ -905,20 +910,17 @@ code {
 }
 .legend-head {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.6rem 1rem;
+  align-items: center;
+  justify-content: flex-end;
   margin-bottom: 0.65rem;
 }
-.legend-head h2 {
-  font-family: var(--mono);
-  font-size: 0.86rem;
-  font-weight: 600;
-  line-height: 1.25;
-  color: var(--ink);
+.legend-inspection {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 .legend-head p {
-  margin-top: 0.2rem;
+  min-width: 0;
   font-family: var(--mono);
   font-size: 0.66rem;
   line-height: 1.4;
@@ -928,7 +930,6 @@ code {
   display: inline-flex;
   align-items: center;
   min-height: 1.65rem;
-  margin-top: 0.35rem;
   padding: 0.2rem 0.45rem;
   color: var(--ink);
   background: var(--accent-wash);
@@ -937,6 +938,34 @@ code {
   font-size: 0.68rem;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
+}
+.legend-inspection button {
+  display: grid;
+  place-items: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  flex: none;
+  padding: 0;
+  color: var(--accent-ink);
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  font-family: var(--mono);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color var(--dur-1) var(--ease),
+    color var(--dur-1) var(--ease), background var(--dur-1) var(--ease);
+}
+.legend-inspection button:hover:not([aria-disabled="true"]) {
+  color: var(--ink);
+  border-color: var(--accent-line);
+  background: var(--surface-2);
+}
+.legend-inspection button[aria-disabled="true"] {
+  color: var(--ink-3);
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 .legend-head p.is-outside-zoom {
   color: var(--accent-ink);
@@ -961,6 +990,9 @@ code {
   cursor: pointer;
 }
 .legend-bulk button:hover:not(:disabled) { text-decoration: underline; }
+.chart-toolbar .legend-bulk button:hover:not(:disabled) {
+  background: transparent;
+}
 .legend-bulk button:disabled {
   color: var(--ink-3);
   opacity: 0.5;
@@ -1358,7 +1390,6 @@ code {
   .stage-axis { text-align: left; }
   .chart-plate { padding-inline: 0.7rem; }
   .chart-toolbar { justify-content: space-between; }
-  .legend-head { align-items: flex-end; }
   .chart-legend {
     --legend-grid: 2rem minmax(0, 1fr) minmax(9rem, 0.6fr);
   }

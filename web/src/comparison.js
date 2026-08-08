@@ -25,3 +25,17 @@ export function taskDisplayName(task) {
   return args ? `${task.executor} · ${args}` : task.executor
 }
 
+/** Return the adjacent measured x value, wrapping at either boundary. */
+export function adjacentMeasuredX(xs, current, direction) {
+  if (!Array.isArray(xs) || xs.length === 0 || direction === 0) return null
+
+  if (!Number.isFinite(current))
+    return direction > 0 ? xs[0] : xs[xs.length - 1]
+
+  const index = xs.indexOf(current)
+  if (index >= 0)
+    return xs[(index + Math.sign(direction) + xs.length) % xs.length]
+
+  if (direction > 0) return xs.find((x) => x > current) ?? xs[0]
+  return xs.findLast((x) => x < current) ?? xs[xs.length - 1]
+}

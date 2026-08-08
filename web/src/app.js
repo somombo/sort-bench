@@ -14,10 +14,15 @@ import {
   destroyChart,
   focusChartSeries,
   resetChartZoom,
+  setChartInspection,
 } from './chart.js'
 import { renderDistribution } from './dist.js'
 import { colorsFor } from './palette.js'
-import { compareAt, taskDisplayName } from './comparison.js'
+import {
+  adjacentMeasuredX,
+  compareAt,
+  taskDisplayName,
+} from './comparison.js'
 import {
   fmtTime,
   fmtRate,
@@ -530,8 +535,16 @@ function buildLegend(xs, byTask, info) {
 function inspectX(x) {
   if (x == null || x === state.inspectedX) return
   state.inspectedX = x
+  setChartInspection(x)
   paintLegendComparison()
   commitViewState()
+}
+
+function stepInspection(direction) {
+  const xs = state.legendContext?.xs ?? []
+  if (xs.length === 0 || (state.inspectedX != null && xs.length < 2)) return
+  const next = adjacentMeasuredX(xs, state.inspectedX, direction)
+  if (next != null) inspectX(next)
 }
 
 function formatRelative(relative) {
@@ -543,20 +556,49 @@ function formatRelative(relative) {
 function paintLegendComparison() {
   const context = state.legendContext
   if (!context) return
-  const { byTask, info } = context
+  const { xs, byTask, info } = context
   const x = state.inspectedX
   const yFmt = state.normalize ? fmtRate : fmtTime
   const outsideZoom = inspectionOutsideZoom(x)
+  const inspectionIndex = x == null ? -1 : xs.indexOf(x)
 
   const legendAt = $('legend-at')
   legendAt.textContent =
     x == null
-      ? 'Move across the chart to compare a measured x value.'
-      : `Comparing at ${info.label} = ${fmtInt(x)}${
+      ? 'Choose a measured x value.'
+      : `${info.label} = ${fmtInt(x)}${
           outsideZoom ? ' · outside current zoom' : ''
-        }`
+        } · ${inspectionIndex + 1} of ${xs.length}`
   legendAt.classList.toggle('has-inspection', x != null)
   legendAt.classList.toggle('is-outside-zoom', outsideZoom)
+
+  const previousX = adjacentMeasuredX(xs, x, -1)
+  const nextX = adjacentMeasuredX(xs, x, 1)
+  const previous = $('inspect-prev')
+  const next = $('inspect-next')
+  const canStep = xs.length > 0 && (x == null || xs.length > 1)
+  previous.setAttribute('aria-disabled', String(!canStep))
+  next.setAttribute('aria-disabled', String(!canStep))
+  previous.setAttribute(
+    'aria-label',
+    previousX == null
+      ? 'No previous measured x value'
+      : x == null
+        ? `Inspect last measured x value: ${fmtInt(previousX)}`
+        : `Inspect previous measured x value: ${fmtInt(previousX)}${
+            inspectionIndex === 0 ? ' (wraps to last)' : ''
+          }`,
+  )
+  next.setAttribute(
+    'aria-label',
+    nextX == null
+      ? 'No next measured x value'
+      : x == null
+        ? `Inspect first measured x value: ${fmtInt(nextX)}`
+        : `Inspect next measured x value: ${fmtInt(nextX)}${
+            inspectionIndex === xs.length - 1 ? ' (wraps to first)' : ''
+          }`,
+  )
 
   const comparison =
     x == null
@@ -675,6 +717,16 @@ function wireControls() {
       draw()
     })
   }
+
+  $('inspect-prev').addEventListener('click', () => stepInspection(-1))
+  $('inspect-next').addEventListener('click', () => stepInspection(1))
+  document
+    .querySelector('.legend-inspection')
+    .addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+      e.preventDefault()
+      stepInspection(e.key === 'ArrowLeft' ? -1 : 1)
+    })
 
   $('reset-zoom').addEventListener('click', () => {
     if (!resetChartZoom()) {

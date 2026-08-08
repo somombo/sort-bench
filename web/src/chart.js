@@ -167,6 +167,17 @@ export function renderChart(container, model) {
   ro.observe(container)
 }
 
+/** Move the retained inspection guide without rebuilding the chart. */
+export function setChartInspection(value) {
+  if (!plot || !activeModel || !activeInspection) return false
+  if (!activeModel.xs.includes(value)) return false
+
+  activeModel.inspectedX = value
+  activeInspection.value = value
+  positionInspection(plot, activeModel, activeInspection)
+  return true
+}
+
 function createInspection(model) {
   return {
     value: Number.isFinite(model.inspectedX) ? model.inspectedX : null,

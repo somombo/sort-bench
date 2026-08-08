@@ -15,7 +15,7 @@
    "type": "git",
    "subDir": null,
    "scope": "",
-   "rev": "16ce327421544e609ae27cdc82dd4688dadef637",
+   "rev": "988551525570a97a8c552aa3d63c13553a437b4a",
    "name": "quicksort",
    "manifestFile": "lake-manifest.json",
    "inputRev": "dev",

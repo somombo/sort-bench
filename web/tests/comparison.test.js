@@ -1,7 +1,11 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
-import { compareAt, taskDisplayName } from '../src/comparison.js'
+import {
+  adjacentMeasuredX,
+  compareAt,
+  taskDisplayName,
+} from '../src/comparison.js'
 
 const tasks = [
   { task_label: 'cpp', executor: 'cpp', alg: '' },
@@ -53,4 +57,23 @@ test('comparison marks exact ties and supports normalized values', () => {
 test('task names omit the separator when args are absent', () => {
   assert.equal(taskDisplayName(tasks[0]), 'cpp')
   assert.equal(taskDisplayName(tasks[1]), 'java · quick')
+})
+
+test('inspection steps through measured x values and wraps at boundaries', () => {
+  const xs = [10, 50, 100]
+
+  assert.equal(adjacentMeasuredX(xs, null, -1), 100)
+  assert.equal(adjacentMeasuredX(xs, null, 1), 10)
+  assert.equal(adjacentMeasuredX(xs, 10, -1), 100)
+  assert.equal(adjacentMeasuredX(xs, 10, 1), 50)
+  assert.equal(adjacentMeasuredX(xs, 100, 1), 10)
+})
+
+test('inspection recovers from a current x outside the measured set', () => {
+  const xs = [10, 50, 100]
+
+  assert.equal(adjacentMeasuredX(xs, 40, -1), 10)
+  assert.equal(adjacentMeasuredX(xs, 40, 1), 50)
+  assert.equal(adjacentMeasuredX(xs, 5, -1), 100)
+  assert.equal(adjacentMeasuredX(xs, 101, 1), 10)
 })

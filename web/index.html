@@ -198,11 +198,18 @@
 
         <figure class="chart-frame">
           <div class="chart-plate">
-            <div class="chart-toolbar" aria-label="Chart navigation">
+            <div class="chart-toolbar" aria-label="Chart controls">
               <span>Drag across the plot to zoom</span>
-              <button id="reset-zoom" type="button" disabled>
-                Reset zoom
-              </button>
+              <div class="chart-toolbar-actions">
+                <button id="reset-zoom" type="button" disabled>
+                  Reset zoom
+                </button>
+                <div class="legend-bulk" aria-label="Task visibility">
+                  <button type="button" data-bulk="all">show all</button>
+                  <span aria-hidden="true">/</span>
+                  <button type="button" data-bulk="none">hide all</button>
+                </div>
+              </div>
             </div>
             <div class="chart-viewport">
               <div id="chart" class="chart"></div>
@@ -210,18 +217,30 @@
                 No tasks shown — select one or more in the legend.
               </div>
             </div>
-            <section class="chart-legend" aria-labelledby="legend-title">
+            <section class="chart-legend" aria-label="Task comparison">
               <div class="legend-head">
-                <div>
-                  <h2 id="legend-title">Tasks</h2>
+                <div
+                  class="legend-inspection"
+                  role="group"
+                  aria-label="Inspected x value"
+                >
+                  <button
+                    id="inspect-prev"
+                    type="button"
+                    aria-label="Inspect the previous measured x value"
+                    aria-disabled="true"
+                    aria-keyshortcuts="ArrowLeft"
+                  ><span aria-hidden="true">‹</span></button>
                   <p id="legend-at" aria-live="polite">
-                    Move across the chart to compare a measured x value.
+                    Choose a measured x value.
                   </p>
-                </div>
-                <div class="legend-bulk" aria-label="Task visibility">
-                  <button type="button" data-bulk="all">show all</button>
-                  <span aria-hidden="true">/</span>
-                  <button type="button" data-bulk="none">hide all</button>
+                  <button
+                    id="inspect-next"
+                    type="button"
+                    aria-label="Inspect the next measured x value"
+                    aria-disabled="true"
+                    aria-keyshortcuts="ArrowRight"
+                  ><span aria-hidden="true">›</span></button>
                 </div>
               </div>
               <div class="legend-columns" aria-hidden="true">

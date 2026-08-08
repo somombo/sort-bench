@@ -148,18 +148,6 @@
           </p>
         </div>
 
-        <div class="field grow">
-          <div class="field-label-row">
-            <span class="field-label">Algorithms</span>
-            <div class="series-bulk">
-              <button type="button" data-bulk="all">all</button>
-              <span aria-hidden="true">/</span>
-              <button type="button" data-bulk="none">none</button>
-            </div>
-          </div>
-          <div class="series-list" id="series"></div>
-        </div>
-
         <details class="method">
           <summary>How a curve is computed</summary>
           <p>
@@ -189,25 +177,44 @@
 
         <figure class="chart-frame">
           <div class="chart-plate">
-            <div id="chart" class="chart"></div>
-            <div class="chart-empty" id="chart-empty" hidden>
-              No algorithms selected — pick one or more from the list.
+            <div class="chart-toolbar" aria-label="Chart navigation">
+              <span>Drag across the plot to zoom</span>
+              <button id="reset-zoom" type="button" disabled>
+                Reset zoom
+              </button>
             </div>
+            <div class="chart-viewport">
+              <div id="chart" class="chart"></div>
+              <div class="chart-empty" id="chart-empty" hidden>
+                No tasks shown — select one or more in the legend.
+              </div>
+            </div>
+            <section class="chart-legend" aria-labelledby="legend-title">
+              <div class="legend-head">
+                <div>
+                  <h2 id="legend-title">Tasks</h2>
+                  <p id="legend-at" aria-live="polite">
+                    Move across the chart to compare a measured x value.
+                  </p>
+                </div>
+                <div class="legend-bulk" aria-label="Task visibility">
+                  <button type="button" data-bulk="all">show all</button>
+                  <span aria-hidden="true">/</span>
+                  <button type="button" data-bulk="none">hide all</button>
+                </div>
+              </div>
+              <div class="legend-columns" aria-hidden="true">
+                <span></span>
+                <span>task</span>
+                <span class="legend-column-metrics">
+                  <span>median</span><span>relative</span>
+                </span>
+              </div>
+              <div class="legend-list" id="legend-list"></div>
+            </section>
           </div>
           <figcaption class="fig-cap" id="chart-cap"></figcaption>
         </figure>
-
-        <section
-          class="ranking"
-          id="ranking"
-          aria-label="Ranking at the largest axis value"
-        >
-          <div class="ranking-head">
-            <h2 id="ranking-title">Ranking</h2>
-            <p id="ranking-note"></p>
-          </div>
-          <ol class="ranking-list" id="ranking-list"></ol>
-        </section>
       </section>
     </main>
 

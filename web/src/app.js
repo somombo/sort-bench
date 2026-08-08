@@ -9,9 +9,15 @@ import {
   runDistribution,
   classifyExperiment,
 } from './db.js'
-import { renderChart, destroyChart } from './chart.js'
+import {
+  renderChart,
+  destroyChart,
+  focusChartSeries,
+  resetChartZoom,
+} from './chart.js'
 import { renderDistribution } from './dist.js'
-import { colorFor } from './palette.js'
+import { colorsFor } from './palette.js'
+import { compareAt, taskDisplayName } from './comparison.js'
 import {
   fmtTime,
   fmtRate,
@@ -58,6 +64,10 @@ const state = {
   maxReps: 1, // largest rep count in the corpus (Warm-up keeps the last rep)
   rows: [], // trend rows for current study+experiment
   trendCache: new Map(),
+  inspectedX: null, // retained only while this experiment still contains x
+  zoom: null, // shareable, but deliberately not remembered per experiment
+  legendContext: null,
+  legendRows: new Map(),
 }
 
 const prettyStudy = (s) =>
@@ -90,6 +100,8 @@ function currentView() {
     normalize: state.normalize,
     spread: state.spread,
     selected: selectedTaskLabels(),
+    inspect: state.inspectedX,
+    zoom: state.zoom,
   }
 }
 
@@ -143,6 +155,8 @@ function applyExperimentView(experiment, sharedView = null) {
   state.ylog = view.ylog
   state.normalize = view.normalize
   state.spread = view.spread
+  state.zoom = view.zoom
+  if (sharedView) state.inspectedX = view.inspect
 
   const validTasks = new Set(state.tasks.map((task) => task.task_label))
   state.selected =
@@ -151,7 +165,6 @@ function applyExperimentView(experiment, sharedView = null) {
       : new Set(view.selected.filter((task) => validTasks.has(task)))
 
   syncViewControls()
-  syncSeriesList()
 }
 
 // Human label for the active per-array reduction, given warm-ups discarded.
@@ -246,7 +259,11 @@ async function selectStudy(study, sharedView = null) {
   )
   state.experiments = experiments
 
-  state.tasks = tasks.map((t, i) => ({ ...t, color: colorFor(i) }))
+  const colors = colorsFor(tasks.map((task) => task.task_label))
+  state.tasks = tasks.map((task, index) => ({
+    ...task,
+    color: colors[index],
+  }))
 
   const rememberedExperiment = sharedView
     ? undefined
@@ -260,7 +277,7 @@ async function selectStudy(study, sharedView = null) {
   state.experiment = openingExperiment.experiment
   applyExperimentView(openingExperiment, sharedView)
 
-  $('study-hint').textContent = `${tasks.length} algorithms across ${
+  $('study-hint').textContent = `${tasks.length} tasks across ${
     new Set(tasks.map((t) => t.executor)).size
   } runtimes · ${experiments.length} experiments`
 
@@ -274,7 +291,6 @@ async function selectStudy(study, sharedView = null) {
   }
 
   buildExperimentList()
-  buildSeriesList()
 
   commitViewState()
   await loadTrend()
@@ -318,41 +334,6 @@ function syncExperimentList() {
   }
 }
 
-function buildSeriesList() {
-  const wrap = $('series')
-  wrap.innerHTML = ''
-  for (const t of state.tasks) {
-    const btn = document.createElement('button')
-    btn.type = 'button'
-    btn.className = 'series-item'
-    btn.style.setProperty('--c', t.color)
-    btn.dataset.task = t.task_label
-    btn.innerHTML = `
-      <span class="series-swatch" aria-hidden="true"></span>
-      <span class="series-meta">
-        <span class="series-lang">${t.executor}</span>
-        <span class="series-alg" title="${t.alg}">${t.alg}</span>
-      </span>`
-    btn.addEventListener('click', () => {
-      if (state.selected.has(t.task_label)) state.selected.delete(t.task_label)
-      else state.selected.add(t.task_label)
-      syncSeriesList()
-      draw()
-    })
-    wrap.appendChild(btn)
-  }
-  syncSeriesList()
-}
-
-function syncSeriesList() {
-  for (const btn of $('series').children) {
-    btn.setAttribute(
-      'aria-pressed',
-      String(state.selected.has(btn.dataset.task)),
-    )
-  }
-}
-
 // ----------------------------------------------------------------- data
 async function loadTrend() {
   syncExperimentList()
@@ -385,10 +366,12 @@ function draw() {
   empty.hidden = selected.length > 0 && rows.length > 0
   empty.textContent = selected.length
     ? 'No positive axis values are available for a logarithmic x scale.'
-    : 'No algorithms selected — pick one or more from the list.'
+    : 'No tasks shown — select one or more in the legend.'
 
   // pivot rows -> shared xs + per-series aligned values + spread summaries
   const xs = [...new Set(rows.map((r) => r.x))].sort((a, b) => a - b)
+  if (state.inspectedX != null && !xs.includes(state.inspectedX))
+    state.inspectedX = null
   const byTask = new Map()
   for (const r of rows) {
     if (!byTask.has(r.task_label)) byTask.set(r.task_label, new Map())
@@ -397,7 +380,7 @@ function draw() {
 
   const norm = (v, x) => (v == null ? null : state.normalize ? v / x : v)
 
-  const series = selected.map((t) => {
+  const series = state.tasks.map((t) => {
     const pts = byTask.get(t.task_label) ?? new Map()
     const ys = xs.map((x) => norm(pts.get(x)?.y, x))
     const stats = xs.map((x) => {
@@ -413,15 +396,17 @@ function draw() {
     })
     return {
       key: t.task_label,
-      label: `${t.executor} · ${t.alg}`,
+      label: taskDisplayName(t),
       color: t.color,
+      show: state.selected.has(t.task_label),
       ys,
       stats,
     }
   })
 
+  buildLegend(xs, byTask, info)
   destroyChart()
-  if (selected.length && xs.length) {
+  if (state.tasks.length && xs.length) {
     renderChart($('chart'), {
       xs,
       series,
@@ -431,11 +416,17 @@ function draw() {
       xLabel: `${info.label} (${info.unit})`,
       yLabel: state.normalize ? 'ns per element' : 'Duration',
       yFmt: state.normalize ? fmtRate : fmtTime,
+      zoom: state.zoom,
+      inspectedX: state.inspectedX,
+      onCursorIndex: (index) => inspectX(xs[index]),
+      onSeriesFocus: syncLegendFocus,
+      onZoomChange: syncZoomState,
       onPointClick: openDistribution,
     })
+  } else {
+    syncZoomState(null, false)
   }
 
-  paintRanking(meta, info, xs, byTask, selected)
   commitViewState()
 }
 
@@ -476,53 +467,174 @@ function paintStageHead(meta, info, rows, omittedNonPositive) {
     `arrays (${reductionLabel()})${qualifiers.length ? '; ' + qualifiers.join('; ') : ''}.`
 }
 
-function paintRanking(meta, info, xs, byTask, selected) {
-  const list = $('ranking-list')
-  list.innerHTML = ''
-  if (!selected.length || !xs.length) {
-    $('ranking-note').textContent = ''
-    return
+function buildLegend(xs, byTask, info) {
+  const list = $('legend-list')
+  const fragment = document.createDocumentFragment()
+  state.legendRows = new Map()
+  state.legendContext = { xs, byTask, info }
+
+  for (const task of state.tasks) {
+    const row = document.createElement('button')
+    row.type = 'button'
+    row.className = 'legend-row'
+    row.dataset.task = task.task_label
+    row.style.setProperty('--c', task.color)
+
+    const sample = document.createElement('span')
+    sample.className = 'legend-sample'
+    sample.setAttribute('aria-hidden', 'true')
+
+    const identity = document.createElement('span')
+    identity.className = 'legend-identity'
+    const executor = document.createElement('span')
+    executor.className = 'legend-executor'
+    executor.textContent = task.executor
+    identity.appendChild(executor)
+    if (task.alg?.trim()) {
+      const args = document.createElement('span')
+      args.className = 'legend-args'
+      args.textContent = task.alg
+      identity.appendChild(args)
+    }
+
+    const metrics = document.createElement('span')
+    metrics.className = 'legend-metrics'
+    const value = document.createElement('span')
+    value.className = 'legend-value'
+    const relative = document.createElement('span')
+    relative.className = 'legend-relative'
+    metrics.append(value, relative)
+    row.append(sample, identity, metrics)
+
+    row.addEventListener('click', () => {
+      if (state.selected.has(task.task_label))
+        state.selected.delete(task.task_label)
+      else state.selected.add(task.task_label)
+      draw()
+    })
+    row.addEventListener('pointerenter', () =>
+      focusChartSeries(task.task_label),
+    )
+    row.addEventListener('pointerleave', () => focusChartSeries(null))
+    row.addEventListener('focus', () => focusChartSeries(task.task_label))
+    row.addEventListener('blur', () => focusChartSeries(null))
+
+    state.legendRows.set(task.task_label, { row, value, relative })
+    fragment.appendChild(row)
   }
-  const maxX = xs[xs.length - 1]
 
-  // rank by absolute median duration at the largest axis value
-  const ranked = selected
-    .map((t) => ({ t, y: byTask.get(t.task_label)?.get(maxX)?.y ?? null }))
-    .filter((d) => d.y != null)
-    .sort((a, b) => a.y - b.y)
+  list.replaceChildren(fragment)
+  paintLegendComparison()
+}
 
-  if (!ranked.length) {
-    $('ranking-note').textContent = 'no data at peak axis value'
-    return
+function inspectX(x) {
+  if (x == null || x === state.inspectedX) return
+  state.inspectedX = x
+  paintLegendComparison()
+  commitViewState()
+}
+
+function formatRelative(relative) {
+  if (relative < 2) return `${relative.toFixed(2)}×`
+  if (relative < 10) return `${relative.toFixed(1)}×`
+  return `${relative.toFixed(0)}×`
+}
+
+function paintLegendComparison() {
+  const context = state.legendContext
+  if (!context) return
+  const { byTask, info } = context
+  const x = state.inspectedX
+  const yFmt = state.normalize ? fmtRate : fmtTime
+  const outsideZoom = inspectionOutsideZoom(x)
+
+  const legendAt = $('legend-at')
+  legendAt.textContent =
+    x == null
+      ? 'Move across the chart to compare a measured x value.'
+      : `Comparing at ${info.label} = ${fmtInt(x)}${
+          outsideZoom ? ' · outside current zoom' : ''
+        }`
+  legendAt.classList.toggle('has-inspection', x != null)
+  legendAt.classList.toggle('is-outside-zoom', outsideZoom)
+
+  const comparison =
+    x == null
+      ? state.tasks.map((task) => ({
+          task,
+          visible: state.selected.has(task.task_label),
+          value: null,
+          fastest: false,
+          relative: null,
+        }))
+      : compareAt(state.tasks, state.selected, byTask, x, state.normalize)
+
+  for (const item of comparison) {
+    const parts = state.legendRows.get(item.task.task_label)
+    if (!parts) continue
+    const { row, value, relative } = parts
+    row.setAttribute('aria-pressed', String(item.visible))
+
+    let valueText = '—'
+    let relativeText = '—'
+    if (!item.visible) relativeText = 'hidden'
+    else if (x != null && item.value == null) valueText = 'no data'
+    else if (item.value != null) {
+      valueText = yFmt(item.value)
+      relativeText = item.fastest
+        ? 'fastest'
+        : formatRelative(item.relative)
+    }
+
+    value.textContent = valueText
+    relative.textContent = relativeText
+    relative.classList.toggle('is-fastest', item.fastest)
+    row.setAttribute(
+      'aria-label',
+      `${taskDisplayName(item.task)}, ${item.visible ? 'shown' : 'hidden'}, ` +
+        `${valueText}, ${relativeText}. ${item.visible ? 'Hide' : 'Show'} line.`,
+    )
   }
-  const fastest = ranked[0].y
-  const slowest = ranked[ranked.length - 1].y
 
-  $('ranking-title').textContent = `Fastest at ${info.label.toLowerCase()} = ${fmtInt(
-    maxX,
-  )}`
-  $('ranking-note').textContent = `${ranked.length} algorithms · median ns`
+  const visibleCount = state.selected.size
+  const showAll = document.querySelector('.legend-bulk [data-bulk="all"]')
+  const hideAll = document.querySelector('.legend-bulk [data-bulk="none"]')
+  showAll.disabled = visibleCount === state.tasks.length
+  hideAll.disabled = visibleCount === 0
+}
 
-  ranked.forEach((d, i) => {
-    const li = document.createElement('li')
-    li.className = 'rank-row'
-    li.style.setProperty('--c', d.t.color)
-    li.style.setProperty('--w', String(d.y / slowest))
-    const rel = d.y / fastest
-    li.innerHTML = `
-      <span class="rank-pos">${i + 1}</span>
-      <span class="rank-name">
-        <span class="rank-dot" aria-hidden="true"></span>
-        <span class="rank-label"><span class="rank-lang">${
-          d.t.executor
-        }</span> ${d.t.alg}</span>
-      </span>
-      <span class="rank-bar-track"><span class="rank-bar"></span></span>
-      <span class="rank-val">${fmtTime(d.y)}
-        <span class="rank-rel">${rel < 1.05 ? 'fastest' : rel.toFixed(rel < 10 ? 1 : 0) + '×'}</span>
-      </span>`
-    list.appendChild(li)
-  })
+function inspectionOutsideZoom(x) {
+  if (x == null || !state.zoom) return false
+  const { xMin, xMax } = state.zoom
+  const tolerance = Math.max(1, Math.abs(xMin), Math.abs(xMax)) * 1e-9
+  return x < xMin - tolerance || x > xMax + tolerance
+}
+
+function syncLegendFocus(taskLabel) {
+  for (const [key, { row }] of state.legendRows) {
+    row.classList.toggle('is-focused', key === taskLabel)
+  }
+}
+
+function cleanZoom(zoom) {
+  if (!zoom) return null
+  return Object.fromEntries(
+    Object.entries(zoom).map(([key, value]) => [
+      key,
+      Number(value.toPrecision(12)),
+    ]),
+  )
+}
+
+function syncZoomState(zoom, zoomed) {
+  const next = zoomed ? cleanZoom(zoom) : null
+  const changed = JSON.stringify(next) !== JSON.stringify(state.zoom)
+  state.zoom = next
+  $('reset-zoom').disabled = !zoomed
+  if (changed) {
+    paintLegendComparison()
+    commitViewState()
+  }
 }
 
 // ----------------------------------------------------------------- controls
@@ -534,6 +646,7 @@ function wireControls() {
     btn.addEventListener('click', () => {
       if (btn.disabled) return
       state[key] = !state[key]
+      if (key !== 'spread') state.zoom = null
       btn.setAttribute('aria-pressed', String(state[key]))
       draw()
     })
@@ -546,22 +659,29 @@ function wireControls() {
   // per-array reduction: one button toggling Min (all reps) ⇄ Warm-up (last rep)
   $('reduce-toggle').addEventListener('click', () => {
     state.warmups = state.warmups > 0 ? 0 : state.maxReps - 1
+    state.zoom = null
     syncReduce()
     commitViewState()
     loadTrend() // reduction changes the SQL — re-query
   })
   syncReduce()
 
-  for (const b of document.querySelectorAll('.series-bulk button')) {
+  for (const b of document.querySelectorAll('.legend-bulk button')) {
     b.addEventListener('click', () => {
       state.selected =
         b.dataset.bulk === 'all'
           ? new Set(state.tasks.map((t) => t.task_label))
           : new Set()
-      syncSeriesList()
       draw()
     })
   }
+
+  $('reset-zoom').addEventListener('click', () => {
+    if (!resetChartZoom()) {
+      state.zoom = null
+      draw()
+    }
+  })
 
   // distribution drawer: backdrop click closes
   const dlg = $('dist')

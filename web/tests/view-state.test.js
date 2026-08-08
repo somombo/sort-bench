@@ -28,6 +28,8 @@ test('defaults to Cardinality Ascending and its normalized log view', () => {
     normalize: true,
     spread: false,
     selected: null,
+    inspect: null,
+    zoom: null,
   })
   assert.equal(resolveView(experiments[0]).normalize, false)
 })
@@ -46,7 +48,24 @@ test('a shared link ignores remembered values, including omitted fields', () => 
     normalize: false,
     spread: false,
     selected: null,
+    inspect: null,
+    zoom: null,
   })
+})
+
+test('zoom is shareable but is not restored from page-memory preferences', () => {
+  const zoom = { xMin: 1, xMax: 10, yMin: 2, yMax: 20 }
+
+  assert.equal(resolveView({ axis: 'swaps' }, { zoom }).zoom, null)
+  assert.deepEqual(resolveView({ axis: 'swaps' }, {}, { zoom }).zoom, zoom)
+})
+
+test('inspected x is shareable but is not restored from page-memory preferences', () => {
+  assert.equal(resolveView({ axis: 'swaps' }, { inspect: 64 }).inspect, null)
+  assert.equal(
+    resolveView({ axis: 'swaps' }, {}, { inspect: 64 }).inspect,
+    64,
+  )
 })
 
 test('URL state round-trips an exact custom-series view', () => {
@@ -68,6 +87,8 @@ test('URL state round-trips an exact custom-series view', () => {
     normalize: false,
     spread: true,
     selected: ['kim-em.qsort_three_way', 'leancore.Array.qsort'],
+    inspect: 44721,
+    zoom: { xMin: 32, xMax: 4096, yMin: 1.5, yMax: 88.25 },
   }
 
   replaceUrlView(original, env)
@@ -76,4 +97,27 @@ test('URL state round-trips an exact custom-series view', () => {
   assert.equal(new URL(replaced).searchParams.get('unrelated'), 'keep')
   assert.equal(new URL(replaced).hash, '#chart')
   assert.deepEqual(parsed, { ...original, study: original.study })
+})
+
+test('URL ignores incomplete or invalid zoom bounds', () => {
+  const incomplete = readUrlView(
+    'https://example.test/?study=s&xmin=1&xmax=10&ymin=2',
+  )
+  const reversed = readUrlView(
+    'https://example.test/?study=s&xmin=10&xmax=1&ymin=2&ymax=3',
+  )
+
+  assert.equal(incomplete.zoom, null)
+  assert.equal(reversed.zoom, null)
+})
+
+test('URL ignores an invalid inspected x and accepts zero', () => {
+  assert.equal(
+    readUrlView('https://example.test/?study=s&inspect=nope').inspect,
+    null,
+  )
+  assert.equal(
+    readUrlView('https://example.test/?study=s&inspect=0').inspect,
+    0,
+  )
 })

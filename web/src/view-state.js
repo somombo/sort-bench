@@ -8,6 +8,11 @@ const URL_KEYS = [
   'spread',
   'series',
   'task',
+  'inspect',
+  'xmin',
+  'xmax',
+  'ymin',
+  'ymax',
 ]
 
 const isObject = (value) =>
@@ -18,6 +23,33 @@ function boolParam(params, name) {
   if (value === '1' || value === 'true') return true
   if (value === '0' || value === 'false') return false
   return undefined
+}
+
+function zoomParam(params, name) {
+  const raw = params.get(name)
+  if (raw === null || raw.trim() === '') return undefined
+  const value = Number(raw)
+  return Number.isFinite(value) ? value : undefined
+}
+
+function readZoom(params) {
+  const xMin = zoomParam(params, 'xmin')
+  const xMax = zoomParam(params, 'xmax')
+  const yMin = zoomParam(params, 'ymin')
+  const yMax = zoomParam(params, 'ymax')
+  return xMin < xMax && yMin < yMax ? { xMin, xMax, yMin, yMax } : null
+}
+
+function validZoom(zoom) {
+  return (
+    isObject(zoom) &&
+    Number.isFinite(zoom.xMin) &&
+    Number.isFinite(zoom.xMax) &&
+    Number.isFinite(zoom.yMin) &&
+    Number.isFinite(zoom.yMax) &&
+    zoom.xMin < zoom.xMax &&
+    zoom.yMin < zoom.yMax
+  )
 }
 
 /** Read a complete or partial shared view from the current URL. */
@@ -45,6 +77,8 @@ export function readUrlView(href) {
       normalize: boolParam(params, 'normalize'),
       spread: boolParam(params, 'spread'),
       selected,
+      inspect: zoomParam(params, 'inspect') ?? null,
+      zoom: readZoom(params),
     }
   } catch {
     return null
@@ -74,6 +108,16 @@ export function replaceUrlView(view, env = globalThis) {
       view.selected.forEach((task) => url.searchParams.append('task', task))
     }
 
+    if (validZoom(view.zoom)) {
+      url.searchParams.set('xmin', view.zoom.xMin)
+      url.searchParams.set('xmax', view.zoom.xMax)
+      url.searchParams.set('ymin', view.zoom.yMin)
+      url.searchParams.set('ymax', view.zoom.yMax)
+    }
+
+    if (Number.isFinite(view.inspect))
+      url.searchParams.set('inspect', view.inspect)
+
     env.history.replaceState(null, '', url)
   } catch {
     // URL synchronization is progressive enhancement.
@@ -89,6 +133,8 @@ export function resolveView(experiment, remembered = {}, shared = null) {
     normalize: experiment?.axis === 'cardinality',
     spread: false,
     selected: null,
+    inspect: null,
+    zoom: null,
   }
 
   const source = isObject(shared) ? shared : remembered
@@ -100,6 +146,12 @@ export function resolveView(experiment, remembered = {}, shared = null) {
     }
     if (source.selected === null || Array.isArray(source.selected))
       view.selected = source.selected
+    // Inspection and zoom are shareable transient state, never remembered
+    // experiment preferences.
+    if (isObject(shared)) {
+      if (Number.isFinite(shared.inspect)) view.inspect = shared.inspect
+      if (validZoom(shared.zoom)) view.zoom = shared.zoom
+    }
   }
 
   return view

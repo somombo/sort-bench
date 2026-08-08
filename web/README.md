@@ -47,18 +47,23 @@ and uPlot from a CDN.
   reps, jitter-free) or `Warm-up` (only the last rep, treating the earlier reps
   as warm-ups). Built on a per-group window, so it is robust to varying rep
   counts.
-- **Algorithms** — toggle any subset of the language/algorithm series.
+- **Task legend** — identify every line by its stable color, hide/show tasks,
+  and compare median time plus relative speed at any measured x value.
 - **Remembered views** — each study reopens its most recently used experiment,
   and each experiment remembers its reduction, axes, normalization, spread, and
-  selected algorithms until the page is reloaded.
-- **Shareable URLs** — the active study, experiment, view controls, and selected
-  algorithms are encoded in the URL so copying the address reproduces the same
-  chart for another viewer.
+  visible tasks until the page is reloaded.
+- **Shareable URLs** — the active study, experiment, view controls, visible
+  tasks, inspected x value, and zoom bounds are encoded in the URL so copying
+  the address reproduces the same chart and legend comparison for another
+  viewer.
 
-The trend chart gives a crosshair readout of every series; the ranking panel
-orders algorithms by median duration at the largest axis value. **Click any
-point** to open a drawer showing the full distribution of its individual runs —
-a box-whisker plus every random-array result and the five-number summary.
+The trend chart retains the last inspected x value as a vertical guide, colored
+task markers, and a labeled x-axis callout after the pointer leaves. The legend
+compares every visible task at that slice and flags when it falls outside the
+current zoom; hover a legend row or trace to focus its counterpart. Drag to
+zoom, use **Reset zoom** to restore the full domain, and **click any point** to
+open a drawer showing the full distribution of its individual runs — a
+box-whisker plus every random-array result and the five-number summary.
 
 ## Source layout
 
@@ -67,6 +72,7 @@ web/
 ├── index.html            # app shell + boot overlay
 ├── src/
 │   ├── app.js            # state + control wiring
+│   ├── comparison.js     # at-cursor task comparison logic
 │   ├── db.js             # DuckDB-WASM bootstrap + the trend query pipeline
 │   ├── chart.js          # themed uPlot wrapper
 │   ├── format.js         # duration / count / axis formatting

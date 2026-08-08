@@ -54,6 +54,23 @@ jobs:
         working-directory: web
         run: npm run build
 
+      - name: Pin repository links to benchmark commit
+        env:
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          repo_url="https://github.com/somombo/sort-bench"
+          pinned_url="${repo_url}/tree/${COMMIT_SHA}"
+
+          grep -RIlZ --fixed-strings "$repo_url" web/dist \
+            | xargs -0 -r sed -i "s#${repo_url}#${pinned_url}#g"
+
+          if grep -RIPn -- "${repo_url}(?!/tree/${COMMIT_SHA})" web/dist; then
+            echo "Unpinned sort-bench repository links remain in web/dist" >&2
+            exit 1
+          fi
+
+          grep -RIl --fixed-strings "$pinned_url" web/dist
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:

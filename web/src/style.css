@@ -202,6 +202,18 @@ code {
   padding: 2.8rem clamp(1rem, 4vw, 2.75rem) 0;
 }
 
+.masthead-id {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem 2.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.masthead-copy {
+  min-width: 0;
+}
+
 .masthead-top {
   display: flex;
   flex-wrap: wrap;
@@ -234,6 +246,58 @@ code {
   height: auto;
   fill: var(--accent);
   flex: none;
+}
+
+.tagline {
+  max-width: 62ch;
+  margin-top: 0.65rem;
+  color: var(--ink-2);
+  font-family: var(--serif);
+  font-size: 0.96rem;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+.repo-link {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 3.45rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  color: var(--ink);
+  background: var(--surface);
+  transition: border-color var(--dur-1) var(--ease),
+    background-color var(--dur-1) var(--ease);
+}
+.repo-link:hover {
+  border-color: var(--accent-line);
+  background: var(--surface-2);
+  text-decoration: none;
+}
+.repo-link-mark {
+  width: 1.35rem;
+  height: 1.35rem;
+  flex: none;
+  fill: var(--accent);
+}
+.repo-link-copy {
+  display: grid;
+  gap: 0.12rem;
+}
+.repo-link-title {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.repo-link-detail {
+  color: var(--ink-2);
+  font-size: 0.72rem;
+  line-height: 1.35;
+  white-space: nowrap;
 }
 
 .hero-eyebrow {
@@ -1277,6 +1341,19 @@ code {
   .thm-spine { font-size: 2rem; }
 }
 @media (max-width: 560px) {
+  .masthead {
+    padding-top: 1.8rem;
+  }
+  .masthead-id {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .repo-link {
+    width: 100%;
+  }
+  .repo-link-detail {
+    white-space: normal;
+  }
   .corpus { grid-template-columns: repeat(2, auto); gap: 0.9rem 1.6rem; }
   .stage-axis { text-align: left; }
   .chart-plate { padding-inline: 0.7rem; }

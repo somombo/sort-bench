@@ -26,4 +26,4 @@ buildType = "release"
 [[require]]
 name = "Cli"
 git = "https://github.com/leanprover/lean4-cli"
-rev = "v4.31.0"
+rev = "v4.33.0"

@@ -63,7 +63,7 @@ buildType = "release"
 [[require]]
 name = "quicksort"
 git = "https://github.com/somombo/formalized-quicksort"
-rev = "dev"
+rev = "upstream"
 
 
 

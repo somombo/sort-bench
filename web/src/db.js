@@ -25,9 +25,19 @@ export async function initDB(onStatus = () => {}) {
   await db.registerFileBuffer('benchmark_data.parquet', buf)
 
   conn = await db.connect()
-  await conn.query(
-    `CREATE VIEW data AS SELECT * FROM read_parquet('benchmark_data.parquet')`,
+  // Result schemas produced by impalab are not completely uniform. In
+  // particular, `args` is omitted when every task is identified by its
+  // executor alone. Normalize that optional field here so the queries below
+  // can support both shapes without trying to bind a nonexistent column.
+  const schema = await conn.query(
+    `DESCRIBE SELECT * FROM read_parquet('benchmark_data.parquet')`,
   )
+  const hasArgs = schema.toArray().some((row) => row.toJSON().column_name === 'args')
+  const argsFallback = hasArgs ? '' : ", []::VARCHAR[] AS args"
+  await conn.query(`
+    CREATE VIEW data AS
+    SELECT *${argsFallback} FROM read_parquet('benchmark_data.parquet')
+  `)
   return db
 }
 

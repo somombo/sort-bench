@@ -46,13 +46,6 @@ const AXIS_ORDER = { cardinality: 0, multiplicity: 1, swaps: 2 }
 const viewMemory = { studies: {} }
 
 const STUDY_NOTEBOOKS = {
-  fast_sort_study: 'faster_sort_study',
-  insertionSort_study: 'insertionSort_study',
-  javascript_runtime_sort_study: 'javascriptSort_study',
-  merge_heap_Sort_study: 'mergeheapSort_study',
-  qsort_study: 'qsort_study',
-  slower_sort_study: 'slower_study',
-  lean_experimental_study: 'somomboLean_study',
   pr14653_study: 'pr14653_study',
 }
 
@@ -206,11 +199,10 @@ async function main() {
     buildStudySelect(studies)
 
     const sharedView = readUrlView()
-    // Lead with the cross-language head-to-head unless a shared URL says which
-    // study to open.
+    // Open the PR 14653 study unless a shared URL says which study to open.
     const opening =
       studies.find((s) => s.study === sharedView?.study) ??
-      studies.find((s) => s.study === 'fast_sort_study') ??
+      studies.find((s) => s.study === 'pr14653_study') ??
       studies[0]
     await selectStudy(
       opening.study,

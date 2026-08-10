@@ -1,12 +1,12 @@
 # sort-bench
 
-> A high-precision, cross-language benchmarking suite for sorting algorithms.
+> A high-precision benchmarking suite for Lean sorting algorithms.
 
-`sort-bench` is a testing environment designed to measure, compare, and analyze how well sorting algorithms perform across different programming languages. Powered by the [`impalab`](https://github.com/somombo/impalab) framework, it provides an isolated, reproducible, and fair way to test algorithms.
+`sort-bench` is a testing environment designed to measure, compare, and analyze Lean sorting algorithms. Powered by the [`impalab`](https://github.com/somombo/impalab) framework, it provides an isolated, reproducible, and fair way to test algorithms.
 
 ## Key Features
 
-* **Cross-Language Support:** Benchmark algorithms written in C, C++, C#, Go, Java, JavaScript, Lean, OCaml, Python, Rust, and Zig within a single pipeline.
+* **Focused Lean Comparison:** Benchmark the Lean sorting implementations used by `pr14653_study` within a single pipeline.
 * **Strict Fairness:** Timings strictly measure the sorting algorithm itself. File I/O, string parsing, memory allocation, and framework overhead are explicitly excluded from the measured execution time.
 * **High-Resolution Metrics:** Captures execution times down to the nanosecond using monotonic, high-precision timers.
 * **Reproducible Workloads:** Data generators use deterministic seeding, ensuring that every algorithm sorts the exact same sequence of pseudo-random arrays.
@@ -26,8 +26,9 @@ The benchmark suite is built on a pipeline-based architecture managed by the `im
 ```text
 sort-bench/
 ├── components/
-│   ├── exec-*/          # Language-specific sorting algorithms (e.g., exec-cpp_sorter)
-│   └── gen_*/           # Data distribution generators (e.g., gen_somombo_unifshuffle)
+│   ├── exec-lean_dev_sorter/       # PR 14653 sorting implementations
+│   ├── exec-lean_sorter/           # Baseline Lean sorter
+│   └── gen_somombo_unifshuffle/    # Uniform-shuffle data generator
 ├── lab/                 # Python analysis environment & Jupyter notebooks
 ├── .agents/skills/      # Specialized instructions for AI-assisted development
 └── README.md
@@ -51,7 +52,7 @@ The primary way to interact with `sort-bench` is through the Python lab environm
 
 * **Python 3.13+**
 * **uv** (recommended for fast Python dependency management)
-* Compilers for the languages you wish to benchmark (e.g., `g++`, `go`, `rustc`, `lean`).
+* **Lean** and **Lake**
 
 ### Setup the Laboratory
 
@@ -65,7 +66,7 @@ The primary way to interact with `sort-bench` is through the Python lab environm
    uv sync
    ```
 
-3. Start Jupyter Lab to view existing studies or create a new one:
+3. Start Jupyter Lab to view the study or create a new one:
    ```bash
    uv run jupyter lab
    ```
@@ -74,15 +75,13 @@ The primary way to interact with `sort-bench` is through the Python lab environm
 
 To run a benchmark programmatically, define an `Impa` study within a Jupyter notebook. The Python SDK will automatically invoke the `impa` orchestrator to build the required components, execute the data pipeline, and return the metrics as a Pandas DataFrame.
 
-Check out `lab/qsort_study.ipynb` or `lab/faster_sort_study.ipynb` for concrete examples of how to define study parameters, execute the pipeline, and generate visualizations.
+Check out `lab/pr14653_study.ipynb` for a concrete example of how to define study parameters, execute the pipeline, and generate visualizations.
 
 ### Running in Google Colab
 
-If you prefer to run the analysis without installing anything locally, you can execute the benchmarking lab directly in your browser using Google Colab. All Jupyter notebooks in the `lab/` directory include an "Open In Colab" badge.
+If you prefer to run the analysis without installing anything locally, you can execute the benchmarking lab directly in your browser using Google Colab. The study notebook includes an "Open In Colab" badge.
 
-Here are a few quick links to get started:
-- **QSort Study:** [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/somombo/sort-bench/blob/main/lab/qsort_study.ipynb)
-- **Faster Sort Study:** [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/somombo/sort-bench/blob/main/lab/faster_sort_study.ipynb)
+- **PR 14653 Study:** [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/somombo/sort-bench/blob/main/lab/pr14653_study.ipynb)
 
 ## Adding New Components
 

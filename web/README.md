@@ -35,8 +35,7 @@ and uPlot from a CDN.
 
 ## What you can explore
 
-- **Study** — one benchmark campaign (e.g. the cross-language `fast_sort_study`,
-  or the Lean-focused `lean_experimental_study`).
+- **Study** — the `pr14653_study` benchmark campaign.
 - **Experiment** — each sweeps one axis: **cardinality** (array size),
   **multiplicity** (duplicate density at fixed size), or **swaps**
   (pre-sortedness at fixed size), in ascending or descending base order.

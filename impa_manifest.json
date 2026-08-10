@@ -1,106 +1,34 @@
 {
   "components": {
-    "bun": {
+    "kim-em.qsort_three_way": {
       "type": "executor",
-      "command": "bun",
-      "args": [
-        "run",
-        "./main.js"
-      ],
-      "working_dir": "components/exec-javascript_sorter"
-    },
-    "c": {
-      "type": "executor",
-      "command": "./sorter_c_exe",
-      "working_dir": "components/exec-c_sorter"
-    },
-    "cpp": {
-      "type": "executor",
-      "command": "./sorter_cpp_exe",
-      "working_dir": "components/exec-cpp_sorter"
-    },
-    "csharp": {
-      "type": "executor",
-      "command": "dotnet",
-      "args": [
-        "bin/Release/net8.0/publish/AlgoCSharpSorter.dll"
-      ],
-      "working_dir": "components/exec-csharp_sorter"
-    },
-    "deno": {
-      "type": "executor",
-      "command": "deno",
-      "args": [
-        "run",
-        "--allow-sys",
-        "./main.js"
-      ],
-      "working_dir": "components/exec-javascript_sorter"
-    },
-    "golang": {
-      "type": "executor",
-      "command": "./sorter_go_exe",
-      "working_dir": "components/exec-go_sorter"
-    },
-    "java": {
-      "type": "executor",
-      "command": "java",
-      "args": [
-        "-server",
-        "-XX:+UseParallelGC",
-        "-XX:+AlwaysPreTouch",
-        "-XX:+UseNUMA",
-        "-XX:-UseContainerSupport",
-        "Sorter"
-      ],
-      "working_dir": "components/exec-java_sorter"
+      "command": ".lake/build/bin/KimemSort",
+      "working_dir": "components/exec-lean_dev_sorter"
     },
     "lean": {
       "type": "executor",
       "command": ".lake/build/bin/sorter_lean",
       "working_dir": "components/exec-lean_sorter"
     },
-    "nodejs": {
+    "leancore.Array.qsort": {
       "type": "executor",
-      "command": "node",
-      "args": [
-        "main.js"
-      ],
-      "working_dir": "components/exec-javascript_sorter"
+      "command": ".lake/build/bin/LeanCoreQSort",
+      "working_dir": "components/exec-lean_dev_sorter"
     },
-    "ocaml": {
+    "somombo.qsort_bentleyMcIlroy": {
       "type": "executor",
-      "command": "./sorter_ocaml_exe",
-      "working_dir": "components/exec-ocaml_sorter"
+      "command": ".lake/build/bin/BentleyMcIlroyQSort",
+      "working_dir": "components/exec-lean_dev_sorter"
     },
-    "python": {
+    "somombo.qsort_hoare": {
       "type": "executor",
-      "command": "uv",
-      "args": [
-        "run",
-        "main.py"
-      ],
-      "working_dir": "components/exec-python_sorter"
-    },
-    "rust": {
-      "type": "executor",
-      "command": "target/release/algo-rust_sorter",
-      "working_dir": "components/exec-rust_sorter"
-    },
-    "somombo_unifshuffle": {
-      "type": "generator",
-      "command": ".lake/build/bin/data_generator",
-      "working_dir": "components/gen_somombo_unifshuffle"
+      "command": ".lake/build/bin/HoareQSort",
+      "working_dir": "components/exec-lean_dev_sorter"
     },
     "somombo_unifshuffle_multi": {
       "type": "generator",
       "command": ".lake/build/bin/data_generator_multi",
       "working_dir": "components/gen_somombo_unifshuffle"
-    },
-    "zig": {
-      "type": "executor",
-      "command": "zig-out/bin/sorter_zig_exe",
-      "working_dir": "components/exec-zig_sorter"
     }
   }
 }

@@ -15,6 +15,7 @@ import {
   focusChartSeries,
   resetChartZoom,
   setChartInspection,
+  setChartSeriesVisible,
 } from './chart.js'
 import { renderDistribution } from './dist.js'
 import { colorsFor } from './palette.js'
@@ -532,7 +533,14 @@ function buildLegend(xs, byTask, info) {
       if (state.selected.has(task.task_label))
         state.selected.delete(task.task_label)
       else state.selected.add(task.task_label)
-      draw()
+      const visible = state.selected.has(task.task_label)
+      if (!setChartSeriesVisible(task.task_label, visible)) {
+        draw()
+        return
+      }
+      $('chart-empty').hidden = state.selected.size > 0
+      paintLegendComparison()
+      commitViewState()
     })
     row.addEventListener('pointerenter', () =>
       focusChartSeries(task.task_label),

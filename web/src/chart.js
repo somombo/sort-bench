@@ -178,6 +178,34 @@ export function setChartInspection(value) {
   return true
 }
 
+/** Toggle one trace without rebuilding the chart or disturbing page position. */
+export function setChartSeriesVisible(key, show) {
+  if (!plot || !activeModel) return false
+  const modelIndex = activeModel.series.findIndex((series) => series.key === key)
+  if (modelIndex < 0) return false
+
+  const currentScales = scaleSnapshot(plot)
+  const keepZoom = Boolean(
+    currentScales && fullScales && !sameZoom(currentScales, fullScales),
+  )
+  zoomReady = false
+  activeModel.series[modelIndex].show = show
+  plot.setSeries(modelIndex + 1, { show })
+  if (keepZoom) {
+    plot.batch(() => {
+      plot.setScale('x', { min: currentScales.xMin, max: currentScales.xMax })
+      plot.setScale('y', { min: currentScales.yMin, max: currentScales.yMax })
+    })
+  } else {
+    fullScales = scaleSnapshot(plot)
+  }
+  zoomReady = true
+  reportZoom(plot, activeModel)
+  if (activeInspection)
+    positionInspection(plot, activeModel, activeInspection)
+  return true
+}
+
 function createInspection(model) {
   return {
     value: Number.isFinite(model.inspectedX) ? model.inspectedX : null,

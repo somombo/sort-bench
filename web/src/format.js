@@ -75,13 +75,13 @@ const AXIS = {
     label: 'Multiplicity',
     unit: 'copies per key',
     blurb:
-      'Total array size is held fixed; raising multiplicity means fewer distinct keys, each repeated more — a stress test for duplicate handling.',
+      'Raising multiplicity means fewer distinct keys, each repeated more — a stress test for duplicate handling.',
   },
   swaps: {
     label: 'Swaps',
     unit: 'random swaps',
     blurb:
-      'Total size is fixed; the array starts sorted and receives this many random swaps. Few swaps ≈ nearly sorted, the maximum ≈ fully shuffled — probing adaptivity.',
+      'The array starts sorted and receives this many random swaps. Few swaps ≈ nearly sorted, the maximum ≈ fully shuffled — probing adaptivity.',
   },
 }
 

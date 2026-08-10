@@ -320,10 +320,23 @@ function buildExperimentList() {
     btn.className = 'exp-item'
     btn.setAttribute('role', 'radio')
     btn.dataset.exp = exp.experiment
-    btn.title = exp.experiment
+    const sizeDetail = exp.fixedSize
+      ? `Array length: ${fmtInt(exp.fixedSize)} elements (cardinality × multiplicity)`
+      : exp.axis === 'cardinality'
+        ? 'Varying array sizes'
+        : ''
+    const sizeSubtitle = exp.fixedSize
+      ? `${fmtInt(exp.fixedSize)} elements fixed`
+      : exp.axis === 'cardinality'
+        ? 'Varying array sizes'
+        : ''
+    btn.title = [exp.experiment, sizeDetail].filter(Boolean).join('\n')
     btn.innerHTML = `
       <span class="exp-tick" aria-hidden="true"></span>
-      <span class="exp-name">${axisInfo(exp.axis).label}</span>
+      <span class="exp-copy">
+        <span class="exp-name">${axisInfo(exp.axis).label}</span>
+        ${sizeSubtitle ? `<span class="exp-size">${sizeSubtitle}</span>` : ''}
+      </span>
       <span class="exp-axis">${exp.descending ? 'desc' : 'asc'}</span>`
     btn.addEventListener('click', () => selectExperiment(exp))
     wrap.appendChild(btn)
@@ -358,7 +371,9 @@ async function loadTrend() {
 
 // ----------------------------------------------------------------- draw
 function draw() {
-  const meta = classifyExperiment(state.experiment)
+  const meta =
+    state.experiments.find((exp) => exp.experiment === state.experiment) ??
+    classifyExperiment(state.experiment)
   const info = axisInfo(meta.axis)
   // A logarithmic x axis cannot represent zero or negative values. Keep those
   // points available in linear view, but omit them from this rendering.
@@ -442,7 +457,9 @@ function paintStageHead(meta, info, rows, omittedNonPositive) {
 
   const bits = [info.blurb]
   if (meta.fixedSize)
-    bits.push(`Total size held at ${fmtInt(meta.fixedSize)} elements.`)
+    bits.push(
+      `Array length (cardinality × multiplicity) is fixed at ${fmtInt(meta.fixedSize)} elements.`,
+    )
   if (meta.descending)
     bits.push('Inputs start in reverse-sorted order.')
   $('stage-sub').textContent = bits.join(' ')

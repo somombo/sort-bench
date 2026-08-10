@@ -81,16 +81,23 @@ export async function listExperiments(study) {
     SELECT
       attributes.experiment_name AS experiment,
       bool_or(gen_meta.descending) AS descending,
+      min(gen_meta.cardinality * gen_meta.multiplicity) AS min_array_size,
+      max(gen_meta.cardinality * gen_meta.multiplicity) AS max_array_size,
       count(*) AS n
     FROM data WHERE attributes.study = ${sqlStr(study)}
     GROUP BY 1 ORDER BY experiment
   `)
-  return rows.map((r) => ({
-    experiment: r.experiment,
-    descending: r.descending,
-    n: num(r.n),
-    ...classifyExperiment(r.experiment),
-  }))
+  return rows.map((r) => {
+    const minArraySize = num(r.min_array_size)
+    const maxArraySize = num(r.max_array_size)
+    return {
+      experiment: r.experiment,
+      descending: r.descending,
+      n: num(r.n),
+      ...classifyExperiment(r.experiment),
+      fixedSize: minArraySize === maxArraySize ? minArraySize : null,
+    }
+  })
 }
 
 /** Algorithms (executor + args) present in a study. */

@@ -29,6 +29,7 @@ import {
   fmtRate,
   fmtInt,
   fmtIntShort,
+  summarizeSamples,
   axisInfo,
 } from './format.js'
 import {
@@ -177,9 +178,9 @@ function applyExperimentView(experiment, sharedView = null) {
 function reductionLabel() {
   const w = state.warmups
   const keep = state.maxReps - w
-  if (w <= 0) return 'min over reps'
-  if (keep <= 1) return 'warm · last rep'
-  return `min · last ${keep} reps`
+  if (w <= 0) return 'minimum timing'
+  if (keep <= 1) return 'last timing'
+  return `minimum of last ${keep} timings`
 }
 
 // Reflect the per-array reduction mode into the toggle button + hint.
@@ -189,8 +190,8 @@ function syncReduce() {
   $('reduce-active').textContent = warm ? 'Warm-up' : 'Min'
   $('reduce-alt').textContent = warm ? '→ Min' : '→ Warm-up'
   $('warm-hint').textContent = warm
-    ? `Keeps only the last of the ${state.maxReps} reps, treating the earlier ones as warm-ups.`
-    : `Keeps the fastest of the ${state.maxReps} reps — jitter-free (the lab default).`
+    ? `Keeps only the last of the ${state.maxReps} timing repetitions per sample, treating the earlier ones as warm-ups.`
+    : `Keeps the fastest of the ${state.maxReps} timing repetitions per sample — jitter-free (the lab default).`
 }
 
 // ----------------------------------------------------------------- boot
@@ -469,12 +470,20 @@ function paintStageHead(meta, info, rows, omittedNonPositive) {
   const sweep = xs.length
     ? `${fmtIntShort(Math.min(...xs))} → ${fmtIntShort(Math.max(...xs))}`
     : 'no positive values'
-  const runs = rows.length
-    ? Math.max(...rows.map((r) => r.runs))
-    : 0
+  const samples = summarizeSamples(rows.map((r) => r.runs))
   $('stage-axis').innerHTML = `
-    swept <b>${sweep}</b><br />
-    median of ${runs} arrays · ${reductionLabel()}`
+    <dl class="stage-facts">
+      <div>
+        <dt>Sweep</dt>
+        <dd>${sweep}</dd>
+      </div>
+      <div>
+        <dt>Per-sample result</dt>
+        <dd>${reductionLabel()}</dd>
+      </div>
+    </dl>`
+  $('legend-sample-count').querySelector('strong').textContent =
+    `n = ${samples.n} per point`
 
   // editorial figure caption beneath the chart
   const yName = state.normalize ? 'Time per element' : 'Sort duration'
@@ -486,8 +495,9 @@ function paintStageHead(meta, info, rows, omittedNonPositive) {
   if (state.spread) qualifiers.push('bars show min–IQR–max spread')
   $('chart-cap').textContent =
     `Fig. 1 — ${yName} versus ${xName}, by language and algorithm. ` +
-    `${scaleTxt} axes; each point is the median of ${runs} independent random ` +
-    `arrays (${reductionLabel()})${qualifiers.length ? '; ' + qualifiers.join('; ') : ''}.`
+    `${scaleTxt} axes; each point is the median of ${samples.phrase} ` +
+    `(separately generated arrays; ${reductionLabel()} per sample)` +
+    `${qualifiers.length ? '; ' + qualifiers.join('; ') : ''}.`
 }
 
 function buildLegend(xs, byTask, info) {

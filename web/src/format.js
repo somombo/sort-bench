@@ -64,6 +64,20 @@ export function fmtIntShort(n) {
   return `${+(n / 1e6).toFixed(1)}M`
 }
 
+/** Summarize the independent-sample counts behind a collection of points. */
+export function summarizeSamples(counts) {
+  const valid = counts
+    .map(Number)
+    .filter((n) => Number.isInteger(n) && n > 0)
+  if (!valid.length) return { n: '—', phrase: 'no independent samples' }
+
+  const lo = Math.min(...valid)
+  const hi = Math.max(...valid)
+  const n = lo === hi ? fmtInt(lo) : `${fmtInt(lo)}–${fmtInt(hi)}`
+  const noun = lo === hi && lo === 1 ? 'sample' : 'samples'
+  return { n, phrase: `${n} independent ${noun}` }
+}
+
 const AXIS = {
   cardinality: {
     label: 'Cardinality',

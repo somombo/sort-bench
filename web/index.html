@@ -165,24 +165,25 @@
           <p class="field-hint" id="norm-hint">
             Normalize shows time per element. Spread overlays per-point error
             bars (min · median · max); click any point to inspect its individual
-            runs.
+            samples.
           </p>
         </div>
 
         <details class="method">
           <summary>How a curve is computed</summary>
           <p>
-            For every generated array, the <b>minimum</b> time over repeated
-            runs is kept — stripping OS jitter, GC pauses and context switches.
-            Across the independent random arrays at each axis value, each point
-            is the <b>median</b> of those minima. Only the sort itself is timed;
-            I/O, parsing and allocation are excluded.
+            Each independently generated random array is one <b>sample</b>. For
+            every sample, the <b>minimum</b> time over repeated timing
+            measurements is kept — stripping OS jitter, GC pauses and context
+            switches. At each axis value, each point is the <b>median</b> across
+            those independent samples. Only the sort itself is timed; I/O,
+            parsing and allocation are excluded.
           </p>
           <p>
             Switch <b>Per-array reduction</b> to <b>Warm-up</b> to keep only the
-            last repetition of each array instead of the minimum — emulating
-            warm-up benchmarking, where the final rep is the warmed-up
-            measurement.
+            last timing repetition for each sample instead of the minimum —
+            emulating warm-up benchmarking, where the final measurement is the
+            warmed-up result.
           </p>
         </details>
       </aside>
@@ -193,7 +194,10 @@
             <h1 class="stage-title" id="stage-title">—</h1>
             <p class="stage-sub" id="stage-sub"></p>
           </div>
-          <div class="stage-axis" id="stage-axis"></div>
+          <div
+            class="stage-axis"
+            id="stage-axis"
+          ></div>
         </div>
 
         <figure class="chart-frame">
@@ -219,6 +223,14 @@
             </div>
             <section class="chart-legend" aria-label="Task comparison">
               <div class="legend-head">
+                <div
+                  class="legend-sample-count"
+                  id="legend-sample-count"
+                  aria-live="polite"
+                >
+                  <span>Independent samples</span>
+                  <strong>n = — per point</strong>
+                </div>
                 <div
                   class="legend-inspection"
                   role="group"

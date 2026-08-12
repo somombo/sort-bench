@@ -42,11 +42,12 @@ and uPlot from a CDN.
   (pre-sortedness at fixed size), in ascending or descending base order.
 - **View** — log/linear on either axis, *normalize* to show time per element,
   and *spread* to overlay per-point **error bars** (min · median · max, built
-  from the per-run minima behind each median).
-- **Per-array reduction** — `Min` (the lab default: the fastest of an array's
-  reps, jitter-free) or `Warm-up` (only the last rep, treating the earlier reps
-  as warm-ups). Built on a per-group window, so it is robust to varying rep
-  counts.
+  from the per-sample minima behind each median). The legend header reports the
+  exact number of independent samples behind each plotted point.
+- **Per-array reduction** — `Min` (the lab default: the fastest timing for an
+  array, jitter-free) or `Warm-up` (only the last timing, treating the earlier
+  repetitions as warm-ups). Built on a per-group window, so it is robust to
+  varying repetition counts.
 - **Task legend** — identify every line by its stable color, hide/show tasks,
   and compare median time plus relative speed at any measured x value.
 - **Remembered views** — each study reopens its most recently used experiment,
@@ -62,7 +63,7 @@ task markers, and a labeled x-axis callout after the pointer leaves. The legend
 compares every visible task at that slice and flags when it falls outside the
 current zoom; hover a legend row or trace to focus its counterpart. Drag to
 zoom, use **Reset zoom** to restore the full domain, and **click any point** to
-open a drawer showing the full distribution of its individual runs — a
+open a drawer showing the full distribution of its independent samples — a
 box-whisker plus every random-array result and the five-number summary.
 
 ## Source layout

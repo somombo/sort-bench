@@ -1,5 +1,5 @@
-// Run-distribution drawer — the raw spread behind one plotted point.
-// Renders a horizontal box-whisker plus a strip of every individual run.
+// Sample-distribution drawer — the raw spread behind one plotted point.
+// Renders a horizontal box-whisker plus every independent array sample.
 import { fmtTime, fmtInt } from './format.js'
 
 // Linear-interpolated quantile over an ascending array (matches quantile_cont).
@@ -47,10 +47,10 @@ export function renderDistribution(dialog, ctx) {
   const keptTxt = kept.txt
   const reduced =
     warmups <= 0
-      ? 'minimum over reps'
+      ? 'minimum timing'
       : kept.hi <= 1
-        ? 'last (warm-up) rep'
-        : `min over its last ${keptTxt} reps (first ${warmups} discarded as warm-ups)`
+        ? 'last timing after warm-up'
+        : `minimum of its last ${keptTxt} timings (first ${warmups} discarded as warm-ups)`
 
   // pad domain so caps/dots stay inside the frame
   const span = hi - lo || Math.max(hi, 1)
@@ -72,7 +72,7 @@ export function renderDistribution(dialog, ctx) {
       const cx = xpos(r.metric).toFixed(1)
       const cy = (Y_C + jitter(i) * 17).toFixed(1)
       return `<circle class="dist-dot" cx="${cx}" cy="${cy}" r="3.1">
-        <title>${fmtTime(r.metric)} · ${r.reps} reps</title></circle>`
+        <title>${fmtTime(r.metric)} · ${r.reps} timing repetitions</title></circle>`
     })
     .join('')
 
@@ -112,18 +112,19 @@ export function renderDistribution(dialog, ctx) {
       </header>
 
       <p class="dist-context">
-        ${axisLabel} = <b>${fmtInt(x)}</b> · <b>${n}</b> independent random
-        ${n === 1 ? 'array' : 'arrays'} · ${repsTxt} reps each${
+        ${axisLabel} = <b>${fmtInt(x)}</b> · <b>n = ${n}</b> independent
+        ${n === 1 ? 'sample' : 'samples'} (random ${n === 1 ? 'array' : 'arrays'})
+        · ${repsTxt} timing repetitions per sample${
           warmups > 0
             ? kept.hi <= 1
-              ? ' · last rep only'
-              : ` · last ${keptTxt} kept`
+              ? ' · last timing only'
+              : ` · last ${keptTxt} timings kept`
             : ''
         }
       </p>
 
       <svg class="dist-svg" viewBox="0 0 ${VB_W} 132" role="img"
-           aria-label="Distribution of run times">
+           aria-label="Distribution of independent sample times">
         <line x1="${PAD_L}" y1="104" x2="${VB_W - PAD_R}" y2="104" class="dist-axis" />
         ${tickMarks}
         ${box}
@@ -141,9 +142,9 @@ export function renderDistribution(dialog, ctx) {
       </dl>
 
       <p class="dist-foot">
-        Each dot is one random array, reduced to its <b>${reduced}</b>. The
-        plotted point is the <b>median</b> of these; the box spans the
-        inter-quartile range.
+        Each dot is one independently generated sample, reduced to its
+        <b>${reduced}</b>. The plotted point is the <b>median</b> of these; the
+        box spans the inter-quartile range.
       </p>
     </form>`
 }

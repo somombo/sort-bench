@@ -8,7 +8,7 @@ import {
   resolveView,
 } from '../src/view-state.js'
 
-test('defaults to Cardinality Ascending and its normalized log view', () => {
+test('defaults to Cardinality Ascending and the uniform raw log-log view', () => {
   const experiments = [
     { experiment: 'Swaps Desc', axis: 'swaps', descending: true },
     { experiment: 'Cardinality Desc', axis: 'cardinality', descending: true },
@@ -24,14 +24,28 @@ test('defaults to Cardinality Ascending and its normalized log view', () => {
   assert.deepEqual(resolveView(selected), {
     reduction: 'min',
     xlog: true,
-    ylog: false,
-    normalize: true,
+    ylog: true,
+    normalize: false,
     spread: false,
     selected: null,
     inspect: null,
     zoom: null,
   })
-  assert.equal(resolveView(experiments[0]).normalize, false)
+})
+
+test('uses the same view defaults for every experiment axis', () => {
+  for (const axis of ['cardinality', 'multiplicity', 'swaps']) {
+    const view = resolveView({ axis })
+    assert.deepEqual(
+      {
+        xlog: view.xlog,
+        ylog: view.ylog,
+        normalize: view.normalize,
+        spread: view.spread,
+      },
+      { xlog: true, ylog: true, normalize: false, spread: false },
+    )
+  }
 })
 
 test('a shared link ignores remembered values, including omitted fields', () => {
@@ -44,7 +58,7 @@ test('a shared link ignores remembered values, including omitted fields', () => 
   assert.deepEqual(view, {
     reduction: 'min',
     xlog: true,
-    ylog: false,
+    ylog: true,
     normalize: false,
     spread: false,
     selected: null,

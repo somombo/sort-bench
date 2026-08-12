@@ -129,8 +129,8 @@ export function resolveView(experiment, remembered = {}, shared = null) {
   const view = {
     reduction: 'min',
     xlog: true,
-    ylog: false,
-    normalize: experiment?.axis === 'cardinality',
+    ylog: true,
+    normalize: false,
     spread: false,
     selected: null,
     inspect: null,

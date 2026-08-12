@@ -64,7 +64,7 @@ const state = {
   tasks: [], // [{ task_label, executor, alg, color }]
   selected: new Set(),
   xlog: true,
-  ylog: false,
+  ylog: true,
   normalize: false,
   spread: false, // per-point error bars on/off
   warmups: 0, // reps discarded as warm-ups before the per-array min (0 = min over all)

@@ -43,7 +43,8 @@ and uPlot from a CDN.
 - **View** — log/linear on either axis, *normalize* to show time per element,
   and *spread* to overlay per-point **error bars** (min · median · max, built
   from the per-sample minima behind each median). The legend header reports the
-  exact number of independent samples behind each plotted point.
+  exact number of independent samples behind each plotted point. Every
+  experiment starts with log x and log y on, and normalize and spread off.
 - **Per-array reduction** — `Min` (the lab default: the fastest timing for an
   array, jitter-free) or `Warm-up` (only the last timing, treating the earlier
   repetitions as warm-ups). Built on a per-group window, so it is robust to

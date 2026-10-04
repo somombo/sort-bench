@@ -99,7 +99,7 @@ def setup_java(version="25"):
         os.environ['PATH'] = f"{os.environ['JAVA_HOME']}/bin:{os.environ['PATH']}"
         print(f"Java (GraalVM) version {version} installed.")
 
-def setup_zig(version="0.15.2"):
+def setup_zig(version="0.16.0"):
     """Installs the Zig toolchain if missing."""
     print("--- Checking Zig Toolchain ---")
     try:

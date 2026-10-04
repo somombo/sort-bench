@@ -26,21 +26,21 @@ const registry = [_]Algorithm{
 };
 
 const LineReader = struct {
-    file: std.fs.File,
+    file: std.Io.File,
     buffer: [64 * 1024]u8 = undefined,
     pos: usize = 0,
     len: usize = 0,
 
-    fn readLine(self: *LineReader, allocator: std.mem.Allocator, out: *std.ArrayListUnmanaged(u8)) !bool {
+    fn readLine(self: *LineReader, allocator: std.mem.Allocator, out: *std.ArrayList(u8)) !bool {
         out.clearRetainingCapacity();
         while (true) {
             if (self.pos >= self.len) {
-                self.len = try self.file.read(&self.buffer);
+                self.len = try std.posix.read(self.file.handle, &self.buffer);
                 self.pos = 0;
                 if (self.len == 0) return out.items.len > 0;
             }
             const slice = self.buffer[self.pos..self.len];
-            if (std.mem.indexOfScalar(u8, slice, '\n')) |idx| {
+            if (std.mem.findScalar(u8, slice, '\n')) |idx| {
                 try out.appendSlice(allocator, slice[0..idx]);
                 self.pos += idx + 1;
                 return true;
@@ -54,12 +54,11 @@ const LineReader = struct {
 
 /// Reads benchmark datasets from standard input, executes the requested sorting algorithm,
 /// and writes the elapsed nanoseconds to standard output.
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
+pub fn main(init: std.process.Init) !void {
+    const allocator = init.gpa;
+    const io = init.io;
 
-    var args = try std.process.argsWithAllocator(allocator);
+    var args = try init.minimal.args.iterateAllocator(allocator);
     defer args.deinit();
 
     // Skip executable name
@@ -72,13 +71,16 @@ pub fn main() !void {
 
     const sort_fn = try resolveAlgorithm(target_algo_name);
 
-    var line_reader = LineReader{ .file = std.fs.File.stdin() };
-    const stdout_file = std.fs.File.stdout();
+    var line_reader = LineReader{ .file = std.Io.File.stdin() };
 
-    var master_array: std.ArrayListUnmanaged(u32) = .{};
+    var stdout_buf: [64 * 1024]u8 = undefined;
+    var stdout_file_writer = std.Io.File.stdout().writerStreaming(io, &stdout_buf);
+    const w = &stdout_file_writer.interface;
+
+    var master_array: std.ArrayList(u32) = .empty;
     defer master_array.deinit(allocator);
 
-    var line_buf: std.ArrayListUnmanaged(u8) = .{};
+    var line_buf: std.ArrayList(u8) = .empty;
     defer line_buf.deinit(allocator);
 
     while (try line_reader.readLine(allocator, &line_buf)) {
@@ -90,7 +92,8 @@ pub fn main() !void {
         if (id.len == 0) continue;
 
         try runBenchmark(
-            stdout_file,
+            io,
+            w,
             id,
             sort_fn,
             master_array.items,
@@ -112,7 +115,7 @@ fn resolveAlgorithm(name: []const u8) !SortFn {
 /// Splits a pipe-delimited line, updates the array with parsed integers, and returns the row ID.
 fn parseLineIntoArray(
     line: []const u8,
-    array: *std.ArrayListUnmanaged(u32),
+    array: *std.ArrayList(u32),
     allocator: std.mem.Allocator,
 ) ![]const u8 {
     var pipe_it = std.mem.splitScalar(u8, line, '|');
@@ -135,17 +138,17 @@ fn parseLineIntoArray(
 
 /// Isolates the timing of the sort execution.
 fn runBenchmark(
-    stdout_file: std.fs.File,
+    io: std.Io,
+    w: *std.Io.Writer,
     id: []const u8,
     sort_fn: SortFn,
     array: []u32,
 ) !void {
-    var out_buf: [2048]u8 = undefined;
-
-    var timer = try std.time.Timer.start();
+    const start = std.Io.Clock.awake.now(io);
     sort_fn(array);
-    const elapsed = timer.read();
+    const stop = std.Io.Clock.awake.now(io);
+    const elapsed = start.durationTo(stop).nanoseconds;
 
-    const msg = try std.fmt.bufPrint(&out_buf, "{d}|{s}\n", .{ elapsed, id });
-    try stdout_file.writeAll(msg);
+    try w.print("{d}|{s}\n", .{ elapsed, id });
+    try w.flush();
 }
